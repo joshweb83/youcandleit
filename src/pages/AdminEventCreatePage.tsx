@@ -19,6 +19,7 @@ export function AdminEventCreatePage() {
     title: '',
     description: '',
     summary: '',
+    posterImage: '',
     location: {
       address: '',
       details: '',
@@ -190,6 +191,38 @@ export function AdminEventCreatePage() {
               placeholder="예: 시민환경연대"
               className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
             />
+          </div>
+
+          {/* 포스터 이미지 URL */}
+          <div>
+            <label htmlFor="posterImage" className="block text-sm font-medium mb-2">
+              포스터 이미지 URL
+            </label>
+            <input
+              id="posterImage"
+              type="url"
+              value={formData.posterImage}
+              onChange={(e) => setFormData({ ...formData, posterImage: e.target.value })}
+              placeholder="https://example.com/poster.jpg"
+              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              포스터 이미지 URL을 입력하세요. 집회 상세 페이지에 표시됩니다.
+            </p>
+            {formData.posterImage && (
+              <div className="mt-3">
+                <p className="text-xs text-gray-400 mb-2">미리보기:</p>
+                <img
+                  src={formData.posterImage}
+                  alt="포스터 미리보기"
+                  className="max-w-xs rounded-lg border border-gray-700"
+                  onError={(e) => {
+                    e.currentTarget.src = ''
+                    e.currentTarget.alt = '이미지를 불러올 수 없습니다'
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
 

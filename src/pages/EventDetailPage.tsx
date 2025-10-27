@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Calendar, MapPin, Clock, ArrowLeft, Sparkles, Flame, Heart, Bell, BellOff } from 'lucide-react'
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import { useEvents } from '@/hooks/useEvents'
 import { useComments } from '@/hooks/useComments'
 import { useCandles } from '@/hooks/useCandles'
@@ -16,6 +17,7 @@ import { useFavorites } from '@/hooks/useFavorites'
 import { useNotifications } from '@/hooks/useNotifications'
 import { CommentForm } from '@/components/comment/CommentForm'
 import { NotificationPrompt } from '@/components/notification/NotificationPrompt'
+import 'leaflet/dist/leaflet.css'
 
 export function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -188,6 +190,21 @@ export function EventDetailPage() {
           </div>
         </div>
 
+        {/* 포스터 이미지 */}
+        {event.posterImage && (
+          <div className="mb-6">
+            <img
+              src={event.posterImage}
+              alt={`${event.title} 포스터`}
+              className="w-full rounded-lg object-cover max-h-96"
+              onError={(e) => {
+                // 이미지 로드 실패시 숨김
+                e.currentTarget.style.display = 'none'
+              }}
+            />
+          </div>
+        )}
+
         <p className="text-gray-300 mb-6 whitespace-pre-wrap">{event.description}</p>
 
         {/* 요약 정보 */}
@@ -238,6 +255,38 @@ export function EventDetailPage() {
                 <span className="text-blue-400 ml-2">🌐 원격 {remoteCount}개</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* 장소 지도 */}
+        <div className="mb-6">
+          <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center space-x-2">
+            <MapPin className="w-4 h-4" />
+            <span>집회 장소</span>
+          </h3>
+          <div className="h-64 rounded-lg overflow-hidden border border-gray-700">
+            <MapContainer
+              center={[event.location.coordinates.lat, event.location.coordinates.lng]}
+              zoom={15}
+              style={{ height: '100%', width: '100%' }}
+              scrollWheelZoom={false}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <Marker position={[event.location.coordinates.lat, event.location.coordinates.lng]}>
+                <Popup>
+                  <div className="text-sm">
+                    <div className="font-bold mb-1">{event.title}</div>
+                    <div className="text-gray-600">{event.location.address}</div>
+                    {event.location.details && (
+                      <div className="text-gray-500 text-xs mt-1">{event.location.details}</div>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            </MapContainer>
           </div>
         </div>
 

@@ -6,6 +6,7 @@
 
 import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 'react-leaflet'
 import { LatLngExpression } from 'leaflet'
+import { useNavigate } from 'react-router-dom'
 import type { Event } from '@/types/event.types'
 import { useCandles } from '@/hooks/useCandles'
 import 'leaflet/dist/leaflet.css'
@@ -44,6 +45,7 @@ function ChangeView({ center, zoom }: { center: LatLngExpression; zoom: number }
 }
 
 export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapViewProps) {
+  const navigate = useNavigate()
   const { candles } = useCandles()
 
   // 위치 정보가 있는 촛불만 필터링 (onsite candles)
@@ -72,20 +74,84 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
           key={event.id}
           position={[event.location.coordinates.lat, event.location.coordinates.lng]}
         >
-          <Popup>
-            <div className="text-gray-900">
-              <h3 className="font-bold text-lg mb-1">{event.title}</h3>
-              <p className="text-sm text-gray-600 mb-2">{event.summary}</p>
-              <div className="text-xs text-gray-500">
-                <div>📅 {new Date(event.datetime.start).toLocaleString('ko-KR')}</div>
-                <div>📍 {event.location.address}</div>
-                <div className="mt-2">
-                  <span className="text-yellow-600">👥 {event.participantCount}명</span>
-                  {event.remoteCount > 0 && (
-                    <span className="ml-2 text-blue-600">🌐 {event.remoteCount}명 원격</span>
-                  )}
+          <Popup maxWidth={300}>
+            <div className="text-gray-900 p-2">
+              {/* 포스터 이미지 */}
+              {event.posterImage && (
+                <div className="mb-3">
+                  <img
+                    src={event.posterImage}
+                    alt={`${event.title} 포스터`}
+                    className="w-full h-32 object-cover rounded"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
                 </div>
+              )}
+
+              {/* 상태 배지 */}
+              <div className="mb-2">
+                <span
+                  className={`px-2 py-1 rounded text-xs font-semibold ${
+                    event.status === 'ongoing'
+                      ? 'bg-green-100 text-green-700'
+                      : event.status === 'scheduled'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  {event.status === 'ongoing'
+                    ? '진행중'
+                    : event.status === 'scheduled'
+                      ? '예정'
+                      : '종료'}
+                </span>
               </div>
+
+              {/* 제목 */}
+              <h3 className="font-bold text-lg mb-2">{event.title}</h3>
+
+              {/* 요약 */}
+              {event.summary && <p className="text-sm text-gray-600 mb-3">{event.summary}</p>}
+
+              {/* 세부 정보 */}
+              <div className="text-xs text-gray-500 space-y-1 mb-3">
+                <div className="flex items-start space-x-1">
+                  <span>📅</span>
+                  <span>{new Date(event.datetime.start).toLocaleString('ko-KR')}</span>
+                </div>
+                <div className="flex items-start space-x-1">
+                  <span>📍</span>
+                  <span>{event.location.address}</span>
+                </div>
+                {event.organizer && (
+                  <div className="flex items-start space-x-1">
+                    <span>👥</span>
+                    <span>주최: {event.organizer}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 참여자 수 */}
+              <div className="text-xs mb-3 pb-3 border-b border-gray-200">
+                <span className="text-yellow-600 font-semibold">
+                  🕯️ 현장 {event.participantCount}명
+                </span>
+                {event.remoteCount > 0 && (
+                  <span className="ml-2 text-blue-600 font-semibold">
+                    🌐 원격 {event.remoteCount}명
+                  </span>
+                )}
+              </div>
+
+              {/* 상세보기 버튼 */}
+              <button
+                onClick={() => navigate(`/events/${event.id}`)}
+                className="w-full py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-bold rounded transition-colors"
+              >
+                상세보기
+              </button>
             </div>
           </Popup>
         </Marker>
