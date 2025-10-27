@@ -2,26 +2,36 @@
  * 집회 목록 페이지
  *
  * 모든 집회를 카드 형태로 표시합니다.
- * TODO: Firebase에서 집회 데이터 가져오기, 검색/필터 기능
  */
 
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Search } from 'lucide-react'
+import { Search, Calendar, MapPin, Users } from 'lucide-react'
+import { useEvents } from '@/hooks/useEvents'
 
 export function EventListPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { events, loading } = useEvents()
+  const [searchTerm, setSearchTerm] = useState('')
 
-  // TODO: 실제 데이터는 Firebase에서 가져오기
-  const mockEvents = [
-    {
-      id: '1',
-      title: '기후정의를 위한 집회',
-      summary: '기후 위기에 대응하기 위한 시민 행동',
-      date: '2025-11-15 14:00',
-      location: '광화문 광장',
-      participants: 1234,
-    },
-  ]
+  const filteredEvents = events.filter(
+    (event) =>
+      event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.summary.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="text-center py-12">
+          <div className="text-4xl mb-2">🕯️</div>
+          <p className="text-gray-400">{t('common.loading')}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
@@ -35,35 +45,66 @@ export function EventListPage() {
           <input
             type="text"
             placeholder={t('event.search')}
-            className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-400"
           />
         </div>
       </div>
 
       {/* 집회 목록 */}
       <div className="space-y-4">
-        {mockEvents.map((event) => (
+        {filteredEvents.map((event) => (
           <div
             key={event.id}
+            onClick={() => navigate(`/events/${event.id}`)}
             className="bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-yellow-500 transition-colors cursor-pointer"
           >
-            <h3 className="text-xl font-bold mb-2">{event.title}</h3>
+            <div className="flex items-start justify-between mb-2">
+              <h3 className="text-xl font-bold flex-1">{event.title}</h3>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  event.status === 'ongoing'
+                    ? 'bg-green-500/20 text-green-400'
+                    : event.status === 'scheduled'
+                      ? 'bg-yellow-500/20 text-yellow-400'
+                      : 'bg-gray-500/20 text-gray-400'
+                }`}
+              >
+                {t(`event.${event.status}`)}
+              </span>
+            </div>
             <p className="text-gray-400 mb-4">{event.summary}</p>
-            <div className="flex items-center justify-between text-sm text-gray-500">
-              <div>
-                📅 {event.date} · 📍 {event.location}
+            <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+              <div className="flex items-center space-x-1">
+                <Calendar className="w-4 h-4" />
+                <span>{new Date(event.datetime.start).toLocaleString('ko-KR')}</span>
               </div>
-              <div className="text-yellow-500">👥 {event.participants.toLocaleString()}명</div>
+              <div className="flex items-center space-x-1">
+                <MapPin className="w-4 h-4" />
+                <span>{event.location.address}</span>
+              </div>
+              <div className="flex items-center space-x-1 text-yellow-500">
+                <Users className="w-4 h-4" />
+                <span>{event.participantCount.toLocaleString()}명</span>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
       {/* 빈 상태 */}
-      {mockEvents.length === 0 && (
+      {filteredEvents.length === 0 && (
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">📋</div>
-          <p className="text-gray-400">등록된 집회가 없습니다</p>
+          <div className="text-6xl mb-4">
+            {searchTerm ? '🔍' : '📋'}
+          </div>
+          <p className="text-gray-400">
+            {searchTerm ? '검색 결과가 없습니다' : '등록된 집회가 없습니다'}
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Firebase에 집회를 추가하면 여기에 표시됩니다
+          </p>
         </div>
       )}
     </div>

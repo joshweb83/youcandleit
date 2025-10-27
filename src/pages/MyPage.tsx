@@ -2,24 +2,33 @@
  * 내 정보 페이지
  *
  * 사용자 프로필, 설정, 통계를 표시합니다.
- * TODO: Firebase Auth 통합, Google 로그인
  */
 
 import { useTranslation } from 'react-i18next'
-import { Settings, LogIn } from 'lucide-react'
+import { Settings, LogIn, LogOut, Star } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
 
 export function MyPage() {
   const { t, i18n } = useTranslation()
-
-  // TODO: 실제 사용자 정보는 Firebase Auth에서 가져오기
-  const isLoggedIn = false
+  const { user, loading, login, logout, isAuthenticated } = useAuth()
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'ko' ? 'en' : 'ko'
     i18n.changeLanguage(newLang)
   }
 
-  if (!isLoggedIn) {
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="text-center py-12">
+          <div className="text-4xl mb-2">🕯️</div>
+          <p className="text-gray-400">{t('common.loading')}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated || !user) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* 로그인 전 화면 */}
@@ -27,7 +36,10 @@ export function MyPage() {
           <div className="text-6xl mb-4">👤</div>
           <h2 className="text-2xl font-bold mb-4">{t('auth.login')}</h2>
           <p className="text-gray-400 mb-8">로그인하여 더 많은 기능을 사용하세요</p>
-          <button className="inline-flex items-center space-x-2 bg-white text-gray-900 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors">
+          <button
+            onClick={login}
+            className="inline-flex items-center space-x-2 bg-white text-gray-900 px-6 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors"
+          >
             <LogIn className="w-5 h-5" />
             <span>{t('auth.googleLogin')}</span>
           </button>
@@ -56,7 +68,98 @@ export function MyPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <h1 className="text-3xl font-bold mb-6">{t('nav.mypage')}</h1>
-      {/* TODO: 로그인 후 프로필, 통계, 즐겨찾기 등 */}
+
+      {/* 프로필 */}
+      <div className="bg-gray-800 rounded-lg p-6 mb-6">
+        <div className="flex items-center space-x-4 mb-4">
+          {user.photoURL ? (
+            <img
+              src={user.photoURL}
+              alt={user.displayName}
+              className="w-16 h-16 rounded-full"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center text-2xl">
+              👤
+            </div>
+          )}
+          <div>
+            <h2 className="text-2xl font-bold">{user.displayName}</h2>
+            <p className="text-gray-400">{user.email}</p>
+            {user.role === 'admin' && (
+              <span className="inline-block mt-1 px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded">
+                관리자
+              </span>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={logout}
+          className="inline-flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>{t('auth.logout')}</span>
+        </button>
+      </div>
+
+      {/* 통계 */}
+      <div className="bg-gray-800 rounded-lg p-6 mb-6">
+        <h3 className="text-lg font-bold mb-4">참여 통계</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-yellow-500">{user.stats.eventsAttended}</div>
+            <div className="text-sm text-gray-400">참여한 집회</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-blue-500">{user.stats.commentsPosted}</div>
+            <div className="text-sm text-gray-400">작성한 댓글</div>
+          </div>
+        </div>
+      </div>
+
+      {/* 즐겨찾기 */}
+      <div className="bg-gray-800 rounded-lg p-6 mb-6">
+        <h3 className="text-lg font-bold mb-4 flex items-center space-x-2">
+          <Star className="w-5 h-5 text-yellow-500" />
+          <span>{t('event.favorites')}</span>
+        </h3>
+        {user.favorites.length > 0 ? (
+          <p className="text-gray-400">{user.favorites.length}개의 즐겨찾기</p>
+        ) : (
+          <p className="text-gray-400">즐겨찾기한 집회가 없습니다</p>
+        )}
+      </div>
+
+      {/* 설정 */}
+      <div className="bg-gray-800 rounded-lg p-6">
+        <h3 className="text-lg font-bold mb-4 flex items-center space-x-2">
+          <Settings className="w-5 h-5" />
+          <span>{t('settings.title')}</span>
+        </h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span>{t('settings.language')}</span>
+            <button
+              onClick={toggleLanguage}
+              className="bg-gray-700 px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              {i18n.language === 'ko' ? 'English' : '한국어'}
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>{t('settings.autoGPS')}</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={user.settings.autoEnableGPS}
+                className="sr-only peer"
+                readOnly
+              />
+              <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+            </label>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

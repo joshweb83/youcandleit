@@ -6,6 +6,7 @@ export type EventStatus = 'scheduled' | 'ongoing' | 'ended'
 
 export interface EventLocation {
   address: string
+  details?: string // 추가 장소 설명
   coordinates: {
     lat: number
     lng: number
@@ -14,8 +15,8 @@ export interface EventLocation {
 }
 
 export interface EventDateTime {
-  start: Date
-  end: Date
+  start: string
+  end?: string
 }
 
 export interface Event {
@@ -31,9 +32,9 @@ export interface Event {
   status: EventStatus
   participantCount: number // 현장 참여자 수
   remoteCount: number // 원격 참여자 수
-  createdAt: Date
+  createdAt: number // timestamp
   createdBy: string // 관리자 UID
-  updatedAt: Date
+  updatedAt: number // timestamp
 }
 
 // 집회 생성용 타입 (id, 메타데이터 제외)

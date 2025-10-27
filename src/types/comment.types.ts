@@ -11,7 +11,7 @@ export interface Comment {
   isRemote: boolean // 원격 참여 여부
   isAIGenerated: boolean // AI 생성 여부
   likes: number // 공감 수
-  createdAt: Date
+  createdAt: number // timestamp
 }
 
 // 댓글 생성용 타입
