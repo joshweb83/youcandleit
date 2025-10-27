@@ -6,11 +6,12 @@
 
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Calendar, MapPin, Clock, ArrowLeft, Sparkles, Flame } from 'lucide-react'
+import { Calendar, MapPin, Clock, ArrowLeft, Sparkles, Flame, Heart } from 'lucide-react'
 import { useEvents } from '@/hooks/useEvents'
 import { useComments } from '@/hooks/useComments'
 import { useCandles } from '@/hooks/useCandles'
 import { useAuth } from '@/hooks/useAuth'
+import { useFavorites } from '@/hooks/useFavorites'
 import { CommentForm } from '@/components/comment/CommentForm'
 
 export function EventDetailPage() {
@@ -20,6 +21,7 @@ export function EventDetailPage() {
   const { isAuthenticated } = useAuth()
   const { events, loading: eventsLoading } = useEvents()
   const { comments, loading: commentsLoading, refetch: refetchComments } = useComments(id)
+  const { isFavorite, toggleFavorite } = useFavorites()
 
   const event = events.find((e) => e.id === id)
   const { myCandle, onsiteCount, remoteCount, lightCandle, blowCandle, isLit } = useCandles({
@@ -97,18 +99,34 @@ export function EventDetailPage() {
       {/* 집회 정보 */}
       <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-gray-700">
         <div className="flex items-start justify-between mb-4">
-          <h1 className="text-3xl font-bold flex-1">{event.title}</h1>
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-semibold ${
-              event.status === 'ongoing'
-                ? 'bg-green-500/20 text-green-400'
-                : event.status === 'scheduled'
-                  ? 'bg-yellow-500/20 text-yellow-400'
-                  : 'bg-gray-500/20 text-gray-400'
-            }`}
-          >
-            {t(`event.${event.status}`)}
-          </span>
+          <h1 className="text-3xl font-bold flex-1 pr-4">{event.title}</h1>
+          <div className="flex items-center space-x-3">
+            {/* 즐겨찾기 버튼 */}
+            <button
+              onClick={() => toggleFavorite(event.id)}
+              className="p-2 hover:bg-gray-700 rounded-full transition-colors"
+              aria-label="즐겨찾기 토글"
+            >
+              <Heart
+                className={`w-6 h-6 ${
+                  isFavorite(event.id)
+                    ? 'fill-red-500 text-red-500'
+                    : 'text-gray-400'
+                }`}
+              />
+            </button>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                event.status === 'ongoing'
+                  ? 'bg-green-500/20 text-green-400'
+                  : event.status === 'scheduled'
+                    ? 'bg-yellow-500/20 text-yellow-400'
+                    : 'bg-gray-500/20 text-gray-400'
+              }`}
+            >
+              {t(`event.${event.status}`)}
+            </span>
+          </div>
         </div>
 
         <p className="text-gray-300 mb-6 whitespace-pre-wrap">{event.description}</p>

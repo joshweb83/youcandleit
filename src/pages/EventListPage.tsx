@@ -7,15 +7,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Search, Calendar, MapPin, Users, Plus } from 'lucide-react'
+import { Search, Calendar, MapPin, Users, Plus, Heart } from 'lucide-react'
 import { useEvents } from '@/hooks/useEvents'
 import { useAuth } from '@/hooks/useAuth'
+import { useFavorites } from '@/hooks/useFavorites'
 
 export function EventListPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { events, loading } = useEvents()
   const { isAdmin } = useAuth()
+  const { isFavorite, toggleFavorite } = useFavorites()
   const [searchTerm, setSearchTerm] = useState('')
 
   const filteredEvents = events.filter(
@@ -70,36 +72,58 @@ export function EventListPage() {
         {filteredEvents.map((event) => (
           <div
             key={event.id}
-            onClick={() => navigate(`/events/${event.id}`)}
-            className="bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-yellow-500 transition-colors cursor-pointer"
+            className="bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-yellow-500 transition-colors relative"
           >
-            <div className="flex items-start justify-between mb-2">
-              <h3 className="text-xl font-bold flex-1">{event.title}</h3>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  event.status === 'ongoing'
-                    ? 'bg-green-500/20 text-green-400'
-                    : event.status === 'scheduled'
-                      ? 'bg-yellow-500/20 text-yellow-400'
-                      : 'bg-gray-500/20 text-gray-400'
+            {/* 즐겨찾기 버튼 */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                toggleFavorite(event.id)
+              }}
+              className="absolute top-4 right-4 p-2 hover:bg-gray-700 rounded-full transition-colors z-10"
+              aria-label="즐겨찾기 토글"
+            >
+              <Heart
+                className={`w-5 h-5 ${
+                  isFavorite(event.id)
+                    ? 'fill-red-500 text-red-500'
+                    : 'text-gray-400'
                 }`}
-              >
-                {t(`event.${event.status}`)}
-              </span>
-            </div>
-            <p className="text-gray-400 mb-4">{event.summary}</p>
-            <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-              <div className="flex items-center space-x-1">
-                <Calendar className="w-4 h-4" />
-                <span>{new Date(event.datetime.start).toLocaleString('ko-KR')}</span>
+              />
+            </button>
+
+            <div
+              onClick={() => navigate(`/events/${event.id}`)}
+              className="cursor-pointer"
+            >
+              <div className="flex items-start justify-between mb-2 pr-12">
+                <h3 className="text-xl font-bold flex-1">{event.title}</h3>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    event.status === 'ongoing'
+                      ? 'bg-green-500/20 text-green-400'
+                      : event.status === 'scheduled'
+                        ? 'bg-yellow-500/20 text-yellow-400'
+                        : 'bg-gray-500/20 text-gray-400'
+                  }`}
+                >
+                  {t(`event.${event.status}`)}
+                </span>
               </div>
-              <div className="flex items-center space-x-1">
-                <MapPin className="w-4 h-4" />
-                <span>{event.location.address}</span>
-              </div>
-              <div className="flex items-center space-x-1 text-yellow-500">
-                <Users className="w-4 h-4" />
-                <span>{event.participantCount.toLocaleString()}명</span>
+              <p className="text-gray-400 mb-4">{event.summary}</p>
+              <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                <div className="flex items-center space-x-1">
+                  <Calendar className="w-4 h-4" />
+                  <span>{new Date(event.datetime.start).toLocaleString('ko-KR')}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <MapPin className="w-4 h-4" />
+                  <span>{event.location.address}</span>
+                </div>
+                <div className="flex items-center space-x-1 text-yellow-500">
+                  <Users className="w-4 h-4" />
+                  <span>{event.participantCount.toLocaleString()}명</span>
+                </div>
               </div>
             </div>
           </div>

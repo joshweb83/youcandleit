@@ -4,18 +4,30 @@
  * 사용자 프로필, 설정, 통계를 표시합니다.
  */
 
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Settings, LogIn, LogOut, Star } from 'lucide-react'
+import { Settings, LogIn, LogOut, Star, Calendar, MapPin } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useFavorites } from '@/hooks/useFavorites'
 
 export function MyPage() {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
   const { user, loading, login, logout, isAuthenticated } = useAuth()
+  const { favoriteEvents, loadFavoriteEvents, loading: favoritesLoading } = useFavorites()
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'ko' ? 'en' : 'ko'
     i18n.changeLanguage(newLang)
   }
+
+  // 즐겨찾기 집회 목록 로드
+  useEffect(() => {
+    if (isAuthenticated && user?.favorites && user.favorites.length > 0) {
+      loadFavoriteEvents()
+    }
+  }, [isAuthenticated, user?.favorites, loadFavoriteEvents])
 
   if (loading) {
     return (
@@ -121,12 +133,49 @@ export function MyPage() {
       <div className="bg-gray-800 rounded-lg p-6 mb-6">
         <h3 className="text-lg font-bold mb-4 flex items-center space-x-2">
           <Star className="w-5 h-5 text-yellow-500" />
-          <span>{t('event.favorites')}</span>
+          <span>즐겨찾기 ({user.favorites.length})</span>
         </h3>
-        {user.favorites.length > 0 ? (
-          <p className="text-gray-400">{user.favorites.length}개의 즐겨찾기</p>
+
+        {favoritesLoading ? (
+          <p className="text-gray-400">로딩 중...</p>
+        ) : favoriteEvents.length > 0 ? (
+          <div className="space-y-3">
+            {favoriteEvents.map((event) => (
+              <div
+                key={event.id}
+                onClick={() => navigate(`/events/${event.id}`)}
+                className="bg-gray-900 rounded-lg p-4 hover:bg-gray-700 transition-colors cursor-pointer"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-bold text-lg">{event.title}</h4>
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-semibold ${
+                      event.status === 'ongoing'
+                        ? 'bg-green-500/20 text-green-400'
+                        : event.status === 'scheduled'
+                          ? 'bg-yellow-500/20 text-yellow-400'
+                          : 'bg-gray-500/20 text-gray-400'
+                    }`}
+                  >
+                    {t(`event.${event.status}`)}
+                  </span>
+                </div>
+                <p className="text-gray-400 text-sm mb-3">{event.summary}</p>
+                <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+                  <div className="flex items-center space-x-1">
+                    <Calendar className="w-3 h-3" />
+                    <span>{new Date(event.datetime.start).toLocaleDateString('ko-KR')}</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <MapPin className="w-3 h-3" />
+                    <span>{event.location.address}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
-          <p className="text-gray-400">즐겨찾기한 집회가 없습니다</p>
+          <p className="text-gray-400 text-center py-4">즐겨찾기한 집회가 없습니다</p>
         )}
       </div>
 

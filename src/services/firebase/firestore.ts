@@ -17,6 +17,8 @@ import {
   where,
   orderBy,
   limit,
+  arrayUnion,
+  arrayRemove,
   Timestamp,
 } from 'firebase/firestore'
 import type { Event, EventInput } from '@/types/event.types'
@@ -204,5 +206,93 @@ export async function deleteComment(commentId: string): Promise<boolean> {
   } catch (error) {
     console.error('댓글 삭제 실패:', error)
     return false
+  }
+}
+
+/**
+ * 즐겨찾기 추가
+ */
+export async function addFavorite(userId: string, eventId: string): Promise<boolean> {
+  if (!db) {
+    console.warn('Firestore가 초기화되지 않았습니다.')
+    return false
+  }
+
+  try {
+    const userRef = doc(db!, 'users', userId)
+    await updateDoc(userRef, {
+      favorites: arrayUnion(eventId),
+    })
+    return true
+  } catch (error) {
+    console.error('즐겨찾기 추가 실패:', error)
+    return false
+  }
+}
+
+/**
+ * 즐겨찾기 제거
+ */
+export async function removeFavorite(userId: string, eventId: string): Promise<boolean> {
+  if (!db) {
+    console.warn('Firestore가 초기화되지 않았습니다.')
+    return false
+  }
+
+  try {
+    const userRef = doc(db!, 'users', userId)
+    await updateDoc(userRef, {
+      favorites: arrayRemove(eventId),
+    })
+    return true
+  } catch (error) {
+    console.error('즐겨찾기 제거 실패:', error)
+    return false
+  }
+}
+
+/**
+ * 즐겨찾기 집회 목록 가져오기
+ */
+export async function fetchFavoriteEvents(eventIds: string[]): Promise<Event[]> {
+  if (!db || eventIds.length === 0) {
+    return []
+  }
+
+  try {
+    const eventsRef = collection(db!, 'events')
+    // Firestore 'in' query는 최대 10개까지만 가능
+    const batchSize = 10
+    const batches = []
+
+    for (let i = 0; i < eventIds.length; i += batchSize) {
+      const batch = eventIds.slice(i, i + batchSize)
+      const q = query(eventsRef, where('__name__', 'in', batch))
+      batches.push(getDocs(q))
+    }
+
+    const snapshots = await Promise.all(batches)
+    const events: Event[] = []
+
+    snapshots.forEach((snapshot) => {
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data()
+        events.push({
+          id: doc.id,
+          ...data,
+          datetime: {
+            start: data.datetime.start.toDate().toISOString(),
+            end: data.datetime.end?.toDate().toISOString(),
+          },
+          createdAt: data.createdAt.toMillis(),
+          updatedAt: data.updatedAt.toMillis(),
+        } as Event)
+      })
+    })
+
+    return events
+  } catch (error) {
+    console.error('즐겨찾기 집회 목록 가져오기 실패:', error)
+    return []
   }
 }
