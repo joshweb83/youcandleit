@@ -1,0 +1,87 @@
+{
+  "app": {
+    "name": "Youcandle it",
+    "tagline": "Citizen Participation Platform United by Candlelight"
+  },
+  "nav": {
+    "map": "Map",
+    "events": "Events",
+    "live": "Live",
+    "community": "Community",
+    "mypage": "My Page"
+  },
+  "event": {
+    "title": "Event",
+    "list": "Event List",
+    "detail": "Event Detail",
+    "search": "Search Events",
+    "create": "Create New Event",
+    "ongoing": "Ongoing",
+    "scheduled": "Scheduled",
+    "ended": "Ended",
+    "participants": "Participants",
+    "onsite": "On-site",
+    "remote": "Remote",
+    "favorite": "Favorite",
+    "favorites": "Favorites"
+  },
+  "comment": {
+    "write": "Write Support Comment",
+    "placeholder": "Leave a message of support...",
+    "submit": "Submit",
+    "aiGenerate": "Generate AI Support Message",
+    "likes": "Likes"
+  },
+  "candle": {
+    "light": "Light Candle",
+    "onsite": "On-site Candle",
+    "remote": "Remote Candle",
+    "count": "{{count}} candles"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "googleLogin": "Login with Google",
+    "nickname": "Nickname",
+    "setNickname": "Set Nickname"
+  },
+  "map": {
+    "title": "Event Map",
+    "myLocation": "My Location",
+    "searchLocation": "Search Location"
+  },
+  "weather": {
+    "title": "Weather",
+    "advice": "Preparation Tips"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "autoGPS": "Auto-enable GPS on event detail page",
+    "notifications": "Notifications"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "date": "Date",
+    "time": "Time",
+    "location": "Location",
+    "description": "Description"
+  },
+  "error": {
+    "network": "Network error occurred",
+    "auth": "Authentication failed",
+    "notFound": "Page not found",
+    "permission": "Permission denied",
+    "gps": "Unable to get location"
+  }
+}
