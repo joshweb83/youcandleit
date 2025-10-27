@@ -9,6 +9,7 @@ import { MainLayout } from './components/layout/MainLayout'
 import { MapPage } from './pages/MapPage'
 import { EventListPage } from './pages/EventListPage'
 import { EventDetailPage } from './pages/EventDetailPage'
+import { AdminEventCreatePage } from './pages/AdminEventCreatePage'
 import { LivePage } from './pages/LivePage'
 import { CommunityPage } from './pages/CommunityPage'
 import { MyPage } from './pages/MyPage'
@@ -21,6 +22,7 @@ function App() {
           <Route path="/" element={<MapPage />} />
           <Route path="/events" element={<EventListPage />} />
           <Route path="/events/:id" element={<EventDetailPage />} />
+          <Route path="/admin/events/create" element={<AdminEventCreatePage />} />
           <Route path="/live" element={<LivePage />} />
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/my" element={<MyPage />} />

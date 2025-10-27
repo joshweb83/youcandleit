@@ -7,13 +7,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Search, Calendar, MapPin, Users } from 'lucide-react'
+import { Search, Calendar, MapPin, Users, Plus } from 'lucide-react'
 import { useEvents } from '@/hooks/useEvents'
+import { useAuth } from '@/hooks/useAuth'
 
 export function EventListPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { events, loading } = useEvents()
+  const { isAdmin } = useAuth()
   const [searchTerm, setSearchTerm] = useState('')
 
   const filteredEvents = events.filter(
@@ -37,7 +39,18 @@ export function EventListPage() {
     <div className="max-w-4xl mx-auto px-4 py-6">
       {/* 헤더 */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-4">{t('event.list')}</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-3xl font-bold">{t('event.list')}</h1>
+          {isAdmin && (
+            <button
+              onClick={() => navigate('/admin/events/create')}
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-lg transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              <span>새 집회 생성</span>
+            </button>
+          )}
+        </div>
 
         {/* 검색 바 */}
         <div className="relative">
