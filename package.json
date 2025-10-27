@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Youcandle it - 촛불로 하나되는 시민 참여 플랫폼",
+  "homepage": "https://joshweb83.github.io/youcandleit",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
