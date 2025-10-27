@@ -50,6 +50,30 @@ npm run dev
 
 ---
 
+## 🌐 배포된 사이트
+
+프로젝트는 두 플랫폼에 자동 배포됩니다:
+
+### 🚀 Vercel (메인, 추천)
+```
+https://youcandleit.vercel.app
+```
+- ⚡ **배포 속도**: 30초
+- ✅ **환경 변수**: GUI에서 간편 관리
+- 🔍 **PR 미리보기**: Pull Request마다 별도 URL 생성
+- 📊 **Analytics**: 무료 방문자 통계
+
+### 📄 GitHub Pages (백업)
+```
+https://joshweb83.github.io/youcandleit
+```
+- 📦 **배포 속도**: 2-3분
+- ✅ **무료 호스팅**: GitHub 제공
+
+**Git push하면 두 사이트 모두 자동 업데이트됩니다!**
+
+---
+
 ## 📖 문서
 
 상세한 문서는 다음 파일들을 참고하세요:
@@ -58,6 +82,8 @@ npm run dev
 - [DEVELOPMENT.md](./DEVELOPMENT.md) - 개발 가이드 및 코드 규칙
 - [PROJECT_BRIEF.md](./PROJECT_BRIEF.md) - 프로젝트 기획서
 - [FIREBASE_GUIDE.md](./FIREBASE_GUIDE.md) - Firebase 백엔드 설정 가이드
+- [DEPLOY.md](./DEPLOY.md) - GitHub Pages 배포 가이드
+- [VERCEL_SETUP.md](./VERCEL_SETUP.md) - Vercel 배포 가이드 ⭐
 
 ---
 

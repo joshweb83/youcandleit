@@ -5,10 +5,11 @@ import path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // GitHub Pages 배포를 위한 base URL 설정
+  // Base URL 설정
   // 로컬 개발: base는 '/'
+  // Vercel: base는 '/' (process.env.VERCEL이 설정됨)
   // GitHub Pages: base는 '/youcandleit/' (repository 이름)
-  base: process.env.NODE_ENV === 'production' ? '/youcandleit/' : '/',
+  base: process.env.VERCEL ? '/' : (process.env.NODE_ENV === 'production' ? '/youcandleit/' : '/'),
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
