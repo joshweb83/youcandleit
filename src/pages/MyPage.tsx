@@ -7,15 +7,25 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Settings, LogIn, LogOut, Star, Calendar, MapPin } from 'lucide-react'
+import { Settings, LogIn, LogOut, Star, Calendar, MapPin, Bell, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useFavorites } from '@/hooks/useFavorites'
+import { useNotifications } from '@/hooks/useNotifications'
 
 export function MyPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const { user, loading, login, logout, isAuthenticated } = useAuth()
   const { favoriteEvents, loadFavoriteEvents, loading: favoritesLoading } = useFavorites()
+  const {
+    permission,
+    scheduledNotifications,
+    requestPermission,
+    cancelNotification,
+    sendTest,
+    hasPermission,
+    isSupported,
+  } = useNotifications()
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'ko' ? 'en' : 'ko'
@@ -178,6 +188,101 @@ export function MyPage() {
           <p className="text-gray-400 text-center py-4">즐겨찾기한 집회가 없습니다</p>
         )}
       </div>
+
+      {/* 알림 설정 */}
+      {isSupported && (
+        <div className="bg-gray-800 rounded-lg p-6 mb-6">
+          <h3 className="text-lg font-bold mb-4 flex items-center space-x-2">
+            <Bell className="w-5 h-5 text-blue-400" />
+            <span>알림 설정</span>
+          </h3>
+
+          {/* 알림 권한 상태 */}
+          <div className="mb-4 pb-4 border-b border-gray-700">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-400">알림 권한</span>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  hasPermission
+                    ? 'bg-green-500/20 text-green-400'
+                    : permission === 'denied'
+                      ? 'bg-red-500/20 text-red-400'
+                      : 'bg-gray-500/20 text-gray-400'
+                }`}
+              >
+                {hasPermission ? '허용됨' : permission === 'denied' ? '거부됨' : '대기중'}
+              </span>
+            </div>
+
+            {!hasPermission && permission !== 'denied' && (
+              <button
+                onClick={requestPermission}
+                className="w-full mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+              >
+                알림 권한 요청
+              </button>
+            )}
+
+            {permission === 'denied' && (
+              <p className="text-xs text-gray-500 mt-2">
+                브라우저 설정에서 알림을 허용해주세요.
+              </p>
+            )}
+
+            {hasPermission && (
+              <button
+                onClick={sendTest}
+                className="w-full mt-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm"
+              >
+                테스트 알림 보내기
+              </button>
+            )}
+          </div>
+
+          {/* 예약된 알림 목록 */}
+          <div>
+            <h4 className="font-semibold mb-3">
+              예약된 알림 ({scheduledNotifications.length})
+            </h4>
+            {scheduledNotifications.length > 0 ? (
+              <div className="space-y-2">
+                {scheduledNotifications.map((notification) => (
+                  <div
+                    key={notification.eventId}
+                    className="bg-gray-900 rounded-lg p-3 flex items-start justify-between"
+                  >
+                    <div className="flex-1">
+                      <div className="font-semibold text-sm mb-1">
+                        {notification.eventTitle}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {new Date(notification.eventDate).toLocaleString('ko-KR')}
+                      </div>
+                      <div className="text-xs text-blue-400 mt-1">
+                        알림: {new Date(notification.notificationTime).toLocaleString('ko-KR')}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        cancelNotification(notification.eventId)
+                        alert('알림이 취소되었습니다.')
+                      }}
+                      className="p-1 hover:bg-gray-800 rounded transition-colors"
+                      aria-label="알림 취소"
+                    >
+                      <X className="w-4 h-4 text-gray-400" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-400 text-center py-4 text-sm">
+                예약된 알림이 없습니다
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 설정 */}
       <div className="bg-gray-800 rounded-lg p-6">

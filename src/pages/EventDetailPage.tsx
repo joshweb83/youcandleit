@@ -4,15 +4,18 @@
  * 특정 집회의 상세 정보와 댓글을 표시합니다.
  */
 
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Calendar, MapPin, Clock, ArrowLeft, Sparkles, Flame, Heart } from 'lucide-react'
+import { Calendar, MapPin, Clock, ArrowLeft, Sparkles, Flame, Heart, Bell, BellOff } from 'lucide-react'
 import { useEvents } from '@/hooks/useEvents'
 import { useComments } from '@/hooks/useComments'
 import { useCandles } from '@/hooks/useCandles'
 import { useAuth } from '@/hooks/useAuth'
 import { useFavorites } from '@/hooks/useFavorites'
+import { useNotifications } from '@/hooks/useNotifications'
 import { CommentForm } from '@/components/comment/CommentForm'
+import { NotificationPrompt } from '@/components/notification/NotificationPrompt'
 
 export function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -22,6 +25,16 @@ export function EventDetailPage() {
   const { events, loading: eventsLoading } = useEvents()
   const { comments, loading: commentsLoading, refetch: refetchComments } = useComments(id)
   const { isFavorite, toggleFavorite } = useFavorites()
+  const {
+    hasPermission,
+    isSupported,
+    requestPermission,
+    scheduleNotification,
+    cancelNotification,
+    isScheduled,
+  } = useNotifications()
+
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false)
 
   const event = events.find((e) => e.id === id)
   const { myCandle, onsiteCount, remoteCount, lightCandle, blowCandle, isLit } = useCandles({
@@ -39,6 +52,44 @@ export function EventDetailPage() {
     } else {
       // 원격 참여로 촛불 켜기 (GPS 없이)
       await lightCandle(id, false)
+    }
+  }
+
+  const handleToggleNotification = async () => {
+    if (!id || !event) return
+
+    // 권한이 없으면 요청
+    if (!hasPermission) {
+      setShowNotificationPrompt(true)
+      return
+    }
+
+    // 이미 예약되어 있으면 취소
+    if (isScheduled(id)) {
+      cancelNotification(id)
+      alert('알림이 취소되었습니다.')
+    } else {
+      // 새로 예약
+      const success = scheduleNotification(id, event.title, event.datetime.start)
+      if (success) {
+        alert('알림이 예약되었습니다! 집회 시작 30분 전에 알림을 받습니다.')
+      } else {
+        alert('알림 예약에 실패했습니다. 이미 시작 시간이 지났거나 30분 이내입니다.')
+      }
+    }
+  }
+
+  const handleAllowNotifications = async () => {
+    const granted = await requestPermission()
+    if (granted) {
+      setShowNotificationPrompt(false)
+      // 권한 획득 후 바로 예약
+      if (id && event) {
+        scheduleNotification(id, event.title, event.datetime.start)
+        alert('알림이 예약되었습니다!')
+      }
+    } else {
+      alert('알림 권한이 거부되었습니다. 브라우저 설정에서 알림을 허용해주세요.')
     }
   }
 
@@ -95,6 +146,14 @@ export function EventDetailPage() {
         <ArrowLeft className="w-5 h-5" />
         <span>뒤로 가기</span>
       </button>
+
+      {/* 알림 권한 요청 프롬프트 */}
+      {showNotificationPrompt && isSupported && (
+        <NotificationPrompt
+          onAllow={handleAllowNotifications}
+          onDismiss={() => setShowNotificationPrompt(false)}
+        />
+      )}
 
       {/* 집회 정보 */}
       <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-gray-700">
@@ -184,24 +243,52 @@ export function EventDetailPage() {
 
         {/* 촛불 켜기/끄기 버튼 */}
         {isAuthenticated && (
-          <button
-            onClick={handleToggleCandle}
-            className={`w-full py-4 rounded-lg font-bold text-lg transition-all ${
-              isLit
-                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white shadow-lg shadow-yellow-500/50'
-                : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-            }`}
-          >
-            <div className="flex items-center justify-center space-x-3">
-              <Flame className={`w-6 h-6 ${isLit ? 'animate-pulse' : ''}`} />
-              <span>{isLit ? '촛불 끄기' : '촛불 켜기 (원격 참여)'}</span>
-            </div>
-            {isLit && myCandle && (
-              <div className="text-sm mt-2 opacity-90">
-                {myCandle.type === 'onsite' ? '현장 참여 중' : '원격 참여 중'}
+          <>
+            <button
+              onClick={handleToggleCandle}
+              className={`w-full py-4 rounded-lg font-bold text-lg transition-all mb-3 ${
+                isLit
+                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white shadow-lg shadow-yellow-500/50'
+                  : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-3">
+                <Flame className={`w-6 h-6 ${isLit ? 'animate-pulse' : ''}`} />
+                <span>{isLit ? '촛불 끄기' : '촛불 켜기 (원격 참여)'}</span>
               </div>
+              {isLit && myCandle && (
+                <div className="text-sm mt-2 opacity-90">
+                  {myCandle.type === 'onsite' ? '현장 참여 중' : '원격 참여 중'}
+                </div>
+              )}
+            </button>
+
+            {/* 알림 받기 버튼 */}
+            {isSupported && event.status === 'scheduled' && (
+              <button
+                onClick={handleToggleNotification}
+                className={`w-full py-3 rounded-lg font-semibold transition-all ${
+                  isScheduled(event.id)
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  {isScheduled(event.id) ? (
+                    <>
+                      <Bell className="w-5 h-5" />
+                      <span>알림 설정됨 (30분 전)</span>
+                    </>
+                  ) : (
+                    <>
+                      <BellOff className="w-5 h-5" />
+                      <span>알림 받기 (30분 전)</span>
+                    </>
+                  )}
+                </div>
+              </button>
             )}
-          </button>
+          </>
         )}
       </div>
 
