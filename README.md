@@ -27,26 +27,50 @@
 - Node.js 18+
 - npm 또는 yarn
 - Git
+- **Firebase 프로젝트 (필수)** ⚠️
 
 ### 설치
 
 ```bash
-# 저장소 클론
+# 1. 저장소 클론
 git clone https://github.com/your-username/youcandleit.git
 cd youcandleit
 
-# 의존성 설치
+# 2. 의존성 설치
 npm install
+```
 
-# 환경 변수 설정
+### Firebase 설정 (필수)
+
+**앱이 작동하려면 Firebase 설정이 필요합니다!**
+
+1. [Firebase Console](https://console.firebase.google.com/)에서 새 프로젝트 생성
+2. Authentication → Google 로그인 활성화
+3. Firestore Database 생성 (Production mode)
+4. Realtime Database 생성
+5. 프로젝트 설정 → 웹 앱 추가 → 구성값 복사
+
+```bash
+# 3. 환경 변수 파일 생성
 cp .env.example .env
-# .env 파일을 열어 Firebase 및 Gemini API 키를 입력하세요
 
-# 개발 서버 실행
+# 4. .env 파일을 열어 Firebase 설정값 입력
+# VITE_FIREBASE_API_KEY=실제_API_키
+# VITE_FIREBASE_AUTH_DOMAIN=실제_프로젝트.firebaseapp.com
+# ...
+```
+
+자세한 Firebase 설정 가이드는 [FIREBASE_GUIDE.md](./FIREBASE_GUIDE.md)를 참고하세요.
+
+```bash
+# 5. 개발 서버 실행
 npm run dev
 ```
 
 브라우저에서 `http://localhost:3000` 을 열어 확인하세요!
+
+> 💡 **Firebase 설정 없이 실행하면?**
+> 앱은 실행되지만 데이터를 불러올 수 없습니다. Firebase 설정 안내 화면이 표시됩니다.
 
 ---
 
@@ -186,18 +210,19 @@ npm run format
 - [x] 다국어 시스템
 - [x] 기본 문서화
 
-### Phase 2: MVP (진행 중)
-- [ ] 기본 UI 구현
-- [ ] Firebase 백엔드 연동
-- [ ] Google 로그인
-- [ ] 집회 CRUD
-- [ ] 베타 배포
+### Phase 2: MVP ✅ (완료)
+- [x] 기본 UI 구현
+- [x] Firebase 백엔드 연동
+- [x] Google 로그인
+- [x] 집회 CRUD
+- [x] 베타 배포
 
-### Phase 3: 고도화
-- [ ] GPS 촛불 시각화
-- [ ] Gemini AI 통합
-- [ ] 실시간 스트리밍
-- [ ] 성능 최적화
+### Phase 3: 고도화 ✅ (완료)
+- [x] GPS 촛불 시각화
+- [x] Gemini AI 통합
+- [x] 실시간 스트리밍
+- [x] 댓글 시스템
+- [x] 실시간 참여자 추적
 
 ### Phase 4: 확장
 - [ ] 다국어 확장
