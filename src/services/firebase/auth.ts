@@ -5,17 +5,27 @@
  */
 
 import { auth, db } from './config'
-import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth'
+import {
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  onAuthStateChanged as firebaseOnAuthStateChanged,
+  User as FirebaseUser,
+} from 'firebase/auth'
 import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore'
 import type { User, UserInput } from '@/types/user.types'
-
-const googleProvider = new GoogleAuthProvider()
 
 /**
  * Google 로그인
  */
 export async function signInWithGoogle() {
+  if (!auth || !db) {
+    console.warn('Firebase가 초기화되지 않았습니다.')
+    return null
+  }
+
   try {
+    const googleProvider = new GoogleAuthProvider()
     const result = await signInWithPopup(auth, googleProvider)
     const user = result.user
 
@@ -70,6 +80,11 @@ export async function signInWithGoogle() {
  * 로그아웃
  */
 export async function signOut() {
+  if (!auth) {
+    console.warn('Firebase가 초기화되지 않았습니다.')
+    return
+  }
+
   try {
     await firebaseSignOut(auth)
   } catch (error) {
@@ -82,6 +97,11 @@ export async function signOut() {
  * 사용자 정보 가져오기
  */
 export async function getUserData(uid: string): Promise<User | null> {
+  if (!db) {
+    console.warn('Firestore가 초기화되지 않았습니다.')
+    return null
+  }
+
   try {
     const userRef = doc(db, 'users', uid)
     const userSnap = await getDoc(userRef)
@@ -100,4 +120,23 @@ export async function getUserData(uid: string): Promise<User | null> {
     console.error('사용자 정보 가져오기 실패:', error)
     return null
   }
+}
+
+/**
+ * 현재 인증된 사용자 가져오기
+ */
+export function getCurrentUser() {
+  if (!auth) return null
+  return auth.currentUser
+}
+
+/**
+ * 인증 상태 변화 구독
+ */
+export function onAuthStateChanged(callback: (user: FirebaseUser | null) => void) {
+  if (!auth) {
+    callback(null)
+    return () => {}
+  }
+  return firebaseOnAuthStateChanged(auth, callback)
 }

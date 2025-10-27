@@ -26,8 +26,13 @@ import type { Comment, CommentInput } from '@/types/comment.types'
  * 집회 목록 가져오기
  */
 export async function fetchEvents(status?: string): Promise<Event[]> {
+  if (!db) {
+    console.warn('Firestore가 초기화되지 않았습니다.')
+    return []
+  }
+
   try {
-    const eventsRef = collection(db, 'events')
+    const eventsRef = collection(db!, 'events')
     let q = query(eventsRef, orderBy('datetime.start', 'desc'))
 
     if (status) {
@@ -59,8 +64,13 @@ export async function fetchEvents(status?: string): Promise<Event[]> {
  * 집회 상세 정보 가져오기
  */
 export async function fetchEvent(eventId: string): Promise<Event | null> {
+  if (!db) {
+    console.warn('Firestore가 초기화되지 않았습니다.')
+    return null
+  }
+
   try {
-    const eventRef = doc(db, 'events', eventId)
+    const eventRef = doc(db!, 'events', eventId)
     const eventSnap = await getDoc(eventRef)
 
     if (eventSnap.exists()) {
@@ -85,11 +95,16 @@ export async function fetchEvent(eventId: string): Promise<Event | null> {
 }
 
 /**
- * 집회 생성 (관리자만)
+ * 집회 생성 (관리자 전용)
  */
 export async function createEvent(eventData: EventInput): Promise<string | null> {
+  if (!db) {
+    console.warn('Firestore가 초기화되지 않았습니다.')
+    return null
+  }
+
   try {
-    const eventsRef = collection(db, 'events')
+    const eventsRef = collection(db!, 'events')
 
     const docRef = await addDoc(eventsRef, {
       ...eventData,
@@ -114,8 +129,13 @@ export async function createEvent(eventData: EventInput): Promise<string | null>
  * 댓글 목록 가져오기
  */
 export async function fetchComments(eventId?: string): Promise<Comment[]> {
+  if (!db) {
+    console.warn('Firestore가 초기화되지 않았습니다.')
+    return []
+  }
+
   try {
-    const commentsRef = collection(db, 'comments')
+    const commentsRef = collection(db!, 'comments')
     let q = query(commentsRef, orderBy('createdAt', 'desc'), limit(50))
 
     if (eventId) {
@@ -142,8 +162,13 @@ export async function fetchComments(eventId?: string): Promise<Comment[]> {
  * 댓글 작성
  */
 export async function createComment(commentData: CommentInput): Promise<string | null> {
+  if (!db) {
+    console.warn('Firestore가 초기화되지 않았습니다.')
+    return null
+  }
+
   try {
-    const commentsRef = collection(db, 'comments')
+    const commentsRef = collection(db!, 'comments')
 
     const docRef = await addDoc(commentsRef, {
       ...commentData,
@@ -170,8 +195,10 @@ export async function createComment(commentData: CommentInput): Promise<string |
  * 댓글 삭제
  */
 export async function deleteComment(commentId: string): Promise<boolean> {
+  if (!db) return false
+
   try {
-    const commentRef = doc(db, 'comments', commentId)
+    const commentRef = doc(db!, 'comments', commentId)
     await deleteDoc(commentRef)
     return true
   } catch (error) {

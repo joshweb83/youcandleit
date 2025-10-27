@@ -12,6 +12,11 @@ import type { Candle } from '@/types/candle.types'
  * 촛불 데이터 생성/업데이트
  */
 export async function setCandleData(candle: Candle): Promise<void> {
+  if (!rtdb) {
+    console.warn('Realtime Database가 초기화되지 않았습니다.')
+    return
+  }
+
   try {
     const candleRef = ref(rtdb, `candles/${candle.eventId}/${candle.userId}`)
     await set(candleRef, {
@@ -28,6 +33,11 @@ export async function setCandleData(candle: Candle): Promise<void> {
  * 촛불 데이터 삭제 (사용자가 집회를 떠날 때)
  */
 export async function removeCandleData(eventId: string, userId: string): Promise<void> {
+  if (!rtdb) {
+    console.warn('Realtime Database가 초기화되지 않았습니다.')
+    return
+  }
+
   try {
     const candleRef = ref(rtdb, `candles/${eventId}/${userId}`)
     await remove(candleRef)
@@ -44,6 +54,12 @@ export function subscribeToCandles(
   eventId: string,
   callback: (candles: Candle[]) => void
 ): () => void {
+  if (!rtdb) {
+    console.warn('Realtime Database가 초기화되지 않았습니다.')
+    callback([])
+    return () => {}
+  }
+
   const candlesRef = ref(rtdb, `candles/${eventId}`)
 
   const unsubscribe = onValue(candlesRef, (snapshot) => {
@@ -65,6 +81,12 @@ export function subscribeToCandles(
  * 모든 집회의 촛불 실시간 구독 (지도용)
  */
 export function subscribeToAllCandles(callback: (candles: Candle[]) => void): () => void {
+  if (!rtdb) {
+    console.warn('Realtime Database가 초기화되지 않았습니다.')
+    callback([])
+    return () => {}
+  }
+
   const candlesRef = ref(rtdb, 'candles')
 
   const unsubscribe = onValue(candlesRef, (snapshot) => {
