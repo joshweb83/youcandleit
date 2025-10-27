@@ -4,13 +4,14 @@
  * 모든 집회를 카드 형태로 표시합니다.
  */
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Search, Calendar, MapPin, Users, Plus, Heart } from 'lucide-react'
 import { useEvents } from '@/hooks/useEvents'
 import { useAuth } from '@/hooks/useAuth'
 import { useFavorites } from '@/hooks/useFavorites'
+import { SearchFilter, type FilterState } from '@/components/event/SearchFilter'
 
 export function EventListPage() {
   const { t } = useTranslation()
@@ -19,12 +20,85 @@ export function EventListPage() {
   const { isAdmin } = useAuth()
   const { isFavorite, toggleFavorite } = useFavorites()
   const [searchTerm, setSearchTerm] = useState('')
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [filters, setFilters] = useState<FilterState>({
+    dateFrom: '',
+    dateTo: '',
+    status: 'all',
+    tags: '',
+    sortBy: 'date',
+  })
 
-  const filteredEvents = events.filter(
-    (event) =>
-      event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.summary.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  // 필터 및 정렬 로직
+  const filteredEvents = useMemo(() => {
+    let result = events.filter((event) => {
+      // 검색어 필터
+      const matchesSearch =
+        event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.description.toLowerCase().includes(searchTerm.toLowerCase())
+
+      if (!matchesSearch) return false
+
+      // 날짜 범위 필터
+      if (filters.dateFrom) {
+        const eventDate = new Date(event.datetime.start)
+        const fromDate = new Date(filters.dateFrom)
+        if (eventDate < fromDate) return false
+      }
+
+      if (filters.dateTo) {
+        const eventDate = new Date(event.datetime.start)
+        const toDate = new Date(filters.dateTo)
+        toDate.setHours(23, 59, 59, 999) // 종료일의 끝까지
+        if (eventDate > toDate) return false
+      }
+
+      // 상태 필터
+      if (filters.status !== 'all' && event.status !== filters.status) {
+        return false
+      }
+
+      // 태그 필터
+      if (filters.tags) {
+        const searchTags = filters.tags
+          .split(',')
+          .map((tag) => tag.trim().toLowerCase())
+          .filter((tag) => tag.length > 0)
+
+        const hasMatchingTag = searchTags.some((searchTag) =>
+          event.tags.some((eventTag) =>
+            eventTag.toLowerCase().includes(searchTag)
+          )
+        )
+
+        if (!hasMatchingTag) return false
+      }
+
+      return true
+    })
+
+    // 정렬
+    if (filters.sortBy === 'date') {
+      result.sort((a, b) => {
+        return new Date(b.datetime.start).getTime() - new Date(a.datetime.start).getTime()
+      })
+    } else if (filters.sortBy === 'participants') {
+      result.sort((a, b) => b.participantCount - a.participantCount)
+    }
+
+    return result
+  }, [events, searchTerm, filters])
+
+  const handleResetFilters = () => {
+    setFilters({
+      dateFrom: '',
+      dateTo: '',
+      status: 'all',
+      tags: '',
+      sortBy: 'date',
+    })
+  }
 
   if (loading) {
     return (
@@ -55,7 +129,7 @@ export function EventListPage() {
         </div>
 
         {/* 검색 바 */}
-        <div className="relative">
+        <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
@@ -65,6 +139,20 @@ export function EventListPage() {
             className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-400"
           />
         </div>
+
+        {/* 검색 필터 */}
+        <SearchFilter
+          filters={filters}
+          onFilterChange={setFilters}
+          onReset={handleResetFilters}
+          isOpen={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+        />
+      </div>
+
+      {/* 결과 카운트 */}
+      <div className="mb-4 text-sm text-gray-400">
+        총 {filteredEvents.length}개의 집회
       </div>
 
       {/* 집회 목록 */}
@@ -133,15 +221,19 @@ export function EventListPage() {
       {/* 빈 상태 */}
       {filteredEvents.length === 0 && (
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">
-            {searchTerm ? '🔍' : '📋'}
-          </div>
-          <p className="text-gray-400">
-            {searchTerm ? '검색 결과가 없습니다' : '등록된 집회가 없습니다'}
-          </p>
-          <p className="text-sm text-gray-500 mt-2">
-            Firebase에 집회를 추가하면 여기에 표시됩니다
-          </p>
+          <div className="text-6xl mb-4">🔍</div>
+          <p className="text-gray-400 mb-2">검색 결과가 없습니다</p>
+          {(searchTerm || filters.dateFrom || filters.dateTo || filters.status !== 'all' || filters.tags) && (
+            <button
+              onClick={() => {
+                setSearchTerm('')
+                handleResetFilters()
+              }}
+              className="text-yellow-500 hover:text-yellow-400 text-sm underline"
+            >
+              검색 및 필터 초기화
+            </button>
+          )}
         </div>
       )}
     </div>
