@@ -9,7 +9,6 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Search, Calendar, MapPin, Users, Plus, Heart } from 'lucide-react'
 import { useEvents } from '@/hooks/useEvents'
-import { useAuth } from '@/hooks/useAuth'
 import { useFavorites } from '@/hooks/useFavorites'
 import { SearchFilter, type FilterState } from '@/components/event/SearchFilter'
 
@@ -17,7 +16,6 @@ export function EventListPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { events, loading } = useEvents()
-  const { isAuthenticated } = useAuth()
   const { isFavorite, toggleFavorite } = useFavorites()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterOpen, setFilterOpen] = useState(false)
@@ -228,9 +226,8 @@ export function EventListPage() {
         </div>
       )}
 
-      {/* Floating Action Button - 새 집회 생성 (로그인한 사용자) */}
-      {isAuthenticated && (
-        <button
+      {/* Floating Action Button - 새 집회 생성 */}
+      <button
           onClick={() => navigate('/admin/events/create')}
           className="fixed bottom-20 right-6 md:right-8 lg:right-12 w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-full shadow-2xl hover:shadow-yellow-500/50 transition-all duration-300 flex items-center justify-center group z-50"
           aria-label="새 집회 생성"
@@ -239,8 +236,7 @@ export function EventListPage() {
           <span className="absolute right-full mr-3 px-3 py-2 bg-gray-800 text-white text-sm font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
             새 집회 생성
           </span>
-        </button>
-      )}
+      </button>
     </div>
   )
 }
