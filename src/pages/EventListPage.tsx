@@ -17,7 +17,7 @@ export function EventListPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { events, loading } = useEvents()
-  const { isAdmin } = useAuth()
+  const { isAuthenticated } = useAuth()
   const { isFavorite, toggleFavorite } = useFavorites()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterOpen, setFilterOpen] = useState(false)
@@ -228,8 +228,8 @@ export function EventListPage() {
         </div>
       )}
 
-      {/* Floating Action Button - 새 집회 생성 (관리자 전용) */}
-      {isAdmin && (
+      {/* Floating Action Button - 새 집회 생성 (로그인한 사용자) */}
+      {isAuthenticated && (
         <button
           onClick={() => navigate('/admin/events/create')}
           className="fixed bottom-20 right-6 md:right-8 lg:right-12 w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-full shadow-2xl hover:shadow-yellow-500/50 transition-all duration-300 flex items-center justify-center group z-50"
