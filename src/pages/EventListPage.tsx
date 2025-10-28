@@ -112,20 +112,11 @@ export function EventListPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="max-w-4xl mx-auto px-4 py-6 pb-24">
       {/* 헤더 */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-3xl font-bold">{t('event.list')}</h1>
-          {isAdmin && (
-            <button
-              onClick={() => navigate('/admin/events/create')}
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-lg transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              <span>새 집회 생성</span>
-            </button>
-          )}
         </div>
 
         {/* 검색 바 */}
@@ -235,6 +226,20 @@ export function EventListPage() {
             </button>
           )}
         </div>
+      )}
+
+      {/* Floating Action Button - 새 집회 생성 (관리자 전용) */}
+      {isAdmin && (
+        <button
+          onClick={() => navigate('/admin/events/create')}
+          className="fixed bottom-20 right-6 md:right-8 lg:right-12 w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-full shadow-2xl hover:shadow-yellow-500/50 transition-all duration-300 flex items-center justify-center group z-50"
+          aria-label="새 집회 생성"
+        >
+          <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
+          <span className="absolute right-full mr-3 px-3 py-2 bg-gray-800 text-white text-sm font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+            새 집회 생성
+          </span>
+        </button>
       )}
     </div>
   )
