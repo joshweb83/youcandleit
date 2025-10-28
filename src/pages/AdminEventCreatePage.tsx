@@ -13,7 +13,7 @@ import type { EventInput } from '@/types/event.types'
 
 export function AdminEventCreatePage() {
   const navigate = useNavigate()
-  const { user, isAdmin } = useAuth()
+  const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<EventInput>({
     title: '',
@@ -41,25 +41,6 @@ export function AdminEventCreatePage() {
   })
 
   const [tagInput, setTagInput] = useState('')
-
-  // 관리자가 아니면 접근 불가
-  if (!isAdmin) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">🔒</div>
-          <h2 className="text-2xl font-bold mb-2">접근 권한이 없습니다</h2>
-          <p className="text-gray-400 mb-6">관리자만 집회를 생성할 수 있습니다</p>
-          <button
-            onClick={() => navigate('/events')}
-            className="px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-lg transition-colors"
-          >
-            집회 목록으로
-          </button>
-        </div>
-      </div>
-    )
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
