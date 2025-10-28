@@ -36,7 +36,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         </div>
 
         {/* 콘텐츠 */}
-        <main className="flex-1 pb-16 md:pb-0">
+        <main className="flex-1 pb-24 md:pb-0">
           {children}
         </main>
       </div>
