@@ -46,6 +46,28 @@ export function CommentForm({ eventId, eventTitle, onCommentCreated }: CommentFo
 
     setIsSubmitting(true)
     try {
+      // 원격 참여자의 경우 위치 정보 수집
+      let userLocation: { lat: number; lng: number } | undefined
+
+      if (isRemote && 'geolocation' in navigator) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: false,
+              timeout: 5000,
+              maximumAge: 300000, // 5분간 캐시
+            })
+          })
+          userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          }
+        } catch (error) {
+          // 위치 정보 가져오기 실패시 무시하고 계속 진행
+          console.warn('위치 정보 수집 실패:', error)
+        }
+      }
+
       await createComment({
         eventId,
         userId,
@@ -53,6 +75,7 @@ export function CommentForm({ eventId, eventTitle, onCommentCreated }: CommentFo
         content: content.trim(),
         isRemote,
         isAIGenerated: false,
+        location: userLocation,
       })
       setContent('')
       if (!isAuthenticated) {

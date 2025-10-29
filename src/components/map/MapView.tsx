@@ -5,12 +5,13 @@
  */
 
 import { useState, useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker, Circle } from 'react-leaflet'
 import { LatLngExpression } from 'leaflet'
 import { useNavigate } from 'react-router-dom'
 import { Layers } from 'lucide-react'
 import type { Event } from '@/types/event.types'
 import type { CheckIn } from '@/types/checkin.types'
+import type { Comment } from '@/types/comment.types'
 import { useCandles } from '@/hooks/useCandles'
 import { db } from '@/services/firebase/config'
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore'
@@ -81,6 +82,52 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
   const [selectedTile, setSelectedTile] = useState<MapTileType>('dark')
   const [showTileSelector, setShowTileSelector] = useState(false)
   const [checkIns, setCheckIns] = useState<CheckIn[]>([])
+  const [comments, setComments] = useState<Comment[]>([])
+
+  // 모든 이벤트의 댓글 데이터를 실시간으로 가져오기 (위치 정보가 있는 것만)
+  useEffect(() => {
+    if (!db || events.length === 0) {
+      setComments([])
+      return
+    }
+
+    const unsubscribes: (() => void)[] = []
+
+    events.forEach((event) => {
+      const commentsRef = collection(db!, 'comments')
+      const q = query(commentsRef, where('eventId', '==', event.id), orderBy('createdAt', 'desc'))
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const eventComments: Comment[] = snapshot.docs
+            .map((doc) => {
+              const data = doc.data()
+              return {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt.toMillis ? data.createdAt.toMillis() : data.createdAt,
+              } as Comment
+            })
+            .filter((comment) => comment.location) // 위치 정보가 있는 것만
+
+          setComments((prev) => {
+            const filtered = prev.filter((c) => c.eventId !== event.id)
+            return [...filtered, ...eventComments]
+          })
+        },
+        (error) => {
+          console.error('댓글 실시간 업데이트 실패:', error)
+        }
+      )
+
+      unsubscribes.push(unsubscribe)
+    })
+
+    return () => {
+      unsubscribes.forEach((unsubscribe) => unsubscribe())
+    }
+  }, [events])
 
   // 모든 이벤트의 체크인 데이터를 실시간으로 가져오기
   useEffect(() => {
@@ -245,6 +292,22 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
           </Marker>
         ))}
 
+        {/* 이벤트 반경 원 표시 */}
+        {events.map((event) => (
+          <Circle
+            key={`radius-${event.id}`}
+            center={[event.location.coordinates.lat, event.location.coordinates.lng]}
+            radius={event.location.radius || 500}
+            pathOptions={{
+              color: '#FCD34D',
+              fillColor: '#FCD34D',
+              fillOpacity: 0.1,
+              weight: 2,
+              opacity: 0.5,
+            }}
+          />
+        ))}
+
         {/* 촛불 마커 (현장 참여자) */}
         {candlesWithLocation.map((candle, index) => (
           <CircleMarker
@@ -298,6 +361,40 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
                 </div>
                 <div className="text-xs text-gray-500">
                   {new Date(checkIn.checkedInAt).toLocaleString('ko-KR')}
+                </div>
+              </div>
+            </Popup>
+          </CircleMarker>
+        ))}
+
+        {/* 댓글 작성자 마커 (온라인 참여자) */}
+        {comments.map((comment, index) => (
+          <CircleMarker
+            key={`comment-${comment.userId}-${comment.id}-${index}`}
+            center={[comment.location!.lat, comment.location!.lng]}
+            radius={5}
+            pathOptions={{
+              fillColor: '#60A5FA', // blue-400
+              fillOpacity: 0.7,
+              color: '#3B82F6', // blue-500
+              weight: 1,
+              opacity: 0.8,
+            }}
+          >
+            <Popup>
+              <div className="text-gray-900">
+                <div className="text-2xl mb-2">💬</div>
+                <div className="text-sm font-bold mb-1">
+                  {comment.userName}
+                </div>
+                <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded inline-block mb-2">
+                  온라인 참여
+                </div>
+                <div className="text-xs text-gray-700 mb-2 max-w-[200px] break-words">
+                  {comment.content}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {new Date(comment.createdAt).toLocaleString('ko-KR')}
                 </div>
               </div>
             </Popup>

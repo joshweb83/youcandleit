@@ -355,6 +355,38 @@ export function AdminEventCreatePage() {
               />
             </div>
           </div>
+
+          {/* 인증 반경 */}
+          <div>
+            <label htmlFor="radius" className="block text-sm font-medium mb-2">
+              현장 인증 반경 <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="radius"
+              value={formData.location.radius}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  location: {
+                    ...formData.location,
+                    radius: parseInt(e.target.value),
+                  },
+                })
+              }
+              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+              required
+            >
+              <option value="100">100m</option>
+              <option value="200">200m</option>
+              <option value="300">300m</option>
+              <option value="500">500m</option>
+              <option value="1000">1km</option>
+              <option value="2000">2km</option>
+            </select>
+            <p className="text-xs text-gray-400 mt-2">
+              이 반경 내에 있는 참여자만 현장 인증을 할 수 있습니다.
+            </p>
+          </div>
         </div>
 
         {/* 추가 정보 */}

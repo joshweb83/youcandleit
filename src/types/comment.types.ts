@@ -11,6 +11,11 @@ export interface Comment {
   isRemote: boolean // 원격 참여 여부
   isAIGenerated: boolean // AI 생성 여부
   likes: number // 공감 수
+  location?: {
+    // 댓글 작성자 위치 (선택적)
+    lat: number
+    lng: number
+  }
   createdAt: number // timestamp
 }
 
