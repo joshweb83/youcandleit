@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Calendar, MapPin, Clock, ArrowLeft, Sparkles, Flame, Heart, Bell, BellOff, Layers, Video, MapPinCheck, MessageSquare, ChevronDown, ChevronUp, Navigation, CloudSun } from 'lucide-react'
+import { Calendar, MapPin, ArrowLeft, Sparkles, Flame, Heart, Bell, BellOff, Layers, Video, MapPinCheck, MessageSquare, ChevronDown, ChevronUp, Navigation, CloudSun } from 'lucide-react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { useEvents } from '@/hooks/useEvents'
@@ -158,6 +158,9 @@ export function EventDetailPage() {
   const [weatherLoading, setWeatherLoading] = useState(false)
   const [weatherError, setWeatherError] = useState<string | null>(null)
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null)
+
+  // 설명 펼치기/접기 상태
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
   // 현장 인증 관련 상태
   const [isCheckedIn, setIsCheckedIn] = useState(false)
@@ -455,16 +458,6 @@ export function EventDetailPage() {
 
   if (!event) return null
 
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
-
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       {/* 뒤로 가기 버튼 */}
@@ -543,37 +536,15 @@ export function EventDetailPage() {
           </div>
         )}
 
-        <p className="text-gray-300 mb-6 whitespace-pre-wrap">{event.description}</p>
-
-        {/* 상세 정보 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="flex items-start space-x-3">
-            <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-            <div>
-              <div className="text-sm text-gray-400">시작 시간</div>
-              <div className="text-white">{formatDateTime(event.datetime.start)}</div>
-            </div>
+        {/* 간단한 정보 */}
+        <div className="flex flex-col gap-3 text-sm text-gray-400 mb-6">
+          <div className="flex items-center space-x-2">
+            <Calendar className="w-4 h-4" />
+            <span>{new Date(event.datetime.start).toLocaleString('ko-KR')}</span>
           </div>
-
-          {event.datetime.end && (
-            <div className="flex items-start space-x-3">
-              <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
-              <div>
-                <div className="text-sm text-gray-400">종료 시간</div>
-                <div className="text-white">{formatDateTime(event.datetime.end)}</div>
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-start space-x-3">
-            <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-            <div>
-              <div className="text-sm text-gray-400">장소</div>
-              <div className="text-white">{event.location.address}</div>
-              {event.location.details && (
-                <div className="text-sm text-gray-400 mt-1">{event.location.details}</div>
-              )}
-            </div>
+          <div className="flex items-center space-x-2">
+            <MapPin className="w-4 h-4" />
+            <span>{event.location.address}</span>
           </div>
         </div>
 
@@ -682,6 +653,29 @@ export function EventDetailPage() {
           </div>
         </div>
 
+        {/* 집회 설명 */}
+        <div className="mb-6">
+          <h3 className="text-sm font-semibold text-gray-400 mb-3">집회 설명</h3>
+          <div className="relative">
+            <p
+              className={`text-gray-300 whitespace-pre-wrap ${
+                !isDescriptionExpanded ? 'line-clamp-4' : ''
+              }`}
+            >
+              {event.description}
+            </p>
+            {event.description.split('\n').length > 4 || event.description.length > 200 ? (
+              <button
+                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                className="mt-2 text-sm text-yellow-500 hover:text-yellow-400 transition-colors flex items-center space-x-1"
+              >
+                <span>{isDescriptionExpanded ? '접기' : '더보기'}</span>
+                {isDescriptionExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+            ) : null}
+          </div>
+        </div>
+
         {/* 실시간 방송 */}
         {event.liveStreamUrl && (
           <div className="mb-6">
@@ -697,7 +691,7 @@ export function EventDetailPage() {
                 className="flex items-center space-x-2 px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
               >
                 <MessageSquare className="w-3.5 h-3.5" />
-                <span>{showLiveChat ? '채팅 숨기기' : '채팅 보기'}</span>
+                <span>{showLiveChat ? '라이브채팅 숨기기' : '라이브채팅 보기'}</span>
                 {showLiveChat ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
             </div>
