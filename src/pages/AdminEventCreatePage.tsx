@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import { Save, ArrowLeft, Calendar, MapPin, Video } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { createEvent } from '@/services/firebase/firestore'
+import { IconSelector } from '@/components/event/IconSelector'
 import type { EventInput } from '@/types/event.types'
 
 export function AdminEventCreatePage() {
@@ -20,6 +21,7 @@ export function AdminEventCreatePage() {
     description: '',
     summary: '',
     posterImage: '',
+    icon: '🕯️',
     location: {
       address: '',
       details: '',
@@ -205,6 +207,12 @@ export function AdminEventCreatePage() {
               </div>
             )}
           </div>
+
+          {/* 아이콘 선택 */}
+          <IconSelector
+            selectedIcon={formData.icon}
+            onChange={(icon) => setFormData({ ...formData, icon })}
+          />
         </div>
 
         {/* 일시 */}

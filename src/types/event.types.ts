@@ -25,6 +25,7 @@ export interface Event {
   description: string
   summary: string
   posterImage?: string // 포스터 이미지 URL
+  icon?: string // 이벤트 아이콘 (이모지 또는 URL)
   location: EventLocation
   datetime: EventDateTime
   organizer: string

@@ -15,6 +15,7 @@ const SAMPLE_EVENT: Event = {
   description: '기후 위기 대응을 촉구하는 시민들의 평화적 집회입니다. 모든 시민의 참여를 환영합니다. 지구를 지키기 위한 우리의 목소리를 함께 내주세요.',
   summary: '기후 위기에 대응하는 시민들의 목소리를 모아 정부의 적극적인 대응을 촉구합니다.',
   posterImage: 'https://images.unsplash.com/photo-1569163139394-de4798aa62b6?w=800&q=80',
+  icon: '🕯️',
   location: {
     address: '서울특별시 종로구 세종대로 172 (세종문화회관 앞)',
     details: '세종문화회관 정문 앞 광장',

@@ -204,11 +204,21 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
         />
 
         {/* 집회 마커 */}
-        {events.map((event) => (
-          <Marker
-            key={event.id}
-            position={[event.location.coordinates.lat, event.location.coordinates.lng]}
-          >
+        {events.map((event) => {
+          // 커스텀 아이콘 생성
+          const customIcon = L.divIcon({
+            html: `<div style="font-size: 32px; text-align: center;">${event.icon || '🕯️'}</div>`,
+            className: 'custom-emoji-icon',
+            iconSize: [40, 40],
+            iconAnchor: [20, 40],
+          })
+
+          return (
+            <Marker
+              key={event.id}
+              position={[event.location.coordinates.lat, event.location.coordinates.lng]}
+              icon={customIcon}
+            >
             <Popup maxWidth={300}>
               <div className="text-gray-900 p-2">
                 {/* 포스터 이미지 */}
@@ -290,7 +300,8 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
               </div>
             </Popup>
           </Marker>
-        ))}
+        )
+        })}
 
         {/* 이벤트 반경 원 표시 */}
         {events.map((event) => (
