@@ -12,7 +12,8 @@ import { Layers } from 'lucide-react'
 import type { Event } from '@/types/event.types'
 import type { CheckIn } from '@/types/checkin.types'
 import { useCandles } from '@/hooks/useCandles'
-import { fetchCheckIns } from '@/services/firebase/firestore'
+import { db } from '@/services/firebase/config'
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore'
 import 'leaflet/dist/leaflet.css'
 
 // Leaflet 아이콘 수정 (Vite에서 기본 아이콘이 깨지는 문제 해결)
@@ -81,19 +82,53 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
   const [showTileSelector, setShowTileSelector] = useState(false)
   const [checkIns, setCheckIns] = useState<CheckIn[]>([])
 
-  // 모든 이벤트의 체크인 데이터 가져오기
+  // 모든 이벤트의 체크인 데이터를 실시간으로 가져오기
   useEffect(() => {
-    const loadCheckIns = async () => {
-      const allCheckIns: CheckIn[] = []
-      for (const event of events) {
-        const eventCheckIns = await fetchCheckIns(event.id)
-        allCheckIns.push(...eventCheckIns)
-      }
-      setCheckIns(allCheckIns)
+    if (!db || events.length === 0) {
+      setCheckIns([])
+      return
     }
 
-    if (events.length > 0) {
-      loadCheckIns()
+    // 각 이벤트에 대한 실시간 리스너 설정
+    const unsubscribes: (() => void)[] = []
+
+    events.forEach((event) => {
+      const checkInsRef = collection(db!, 'checkIns')
+      const q = query(
+        checkInsRef,
+        where('eventId', '==', event.id),
+        orderBy('checkedInAt', 'desc')
+      )
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const eventCheckIns: CheckIn[] = snapshot.docs.map((doc) => {
+            const data = doc.data()
+            return {
+              id: doc.id,
+              ...data,
+              checkedInAt: data.checkedInAt.toDate(),
+            } as CheckIn
+          })
+
+          // 기존 체크인 데이터에서 현재 이벤트의 것만 제거하고 새 데이터 추가
+          setCheckIns((prev) => {
+            const filtered = prev.filter((c) => c.eventId !== event.id)
+            return [...filtered, ...eventCheckIns]
+          })
+        },
+        (error) => {
+          console.error('체크인 실시간 업데이트 실패:', error)
+        }
+      )
+
+      unsubscribes.push(unsubscribe)
+    })
+
+    // 컴포넌트 언마운트 시 모든 리스너 정리
+    return () => {
+      unsubscribes.forEach((unsubscribe) => unsubscribe())
     }
   }, [events])
 
