@@ -19,11 +19,8 @@ export function MainLayout({ children }: MainLayoutProps) {
     <div className="h-screen flex flex-col bg-gray-900 text-white overflow-hidden">
       {/* 헤더 */}
       <header className="bg-gray-800 border-b border-gray-700 z-40 flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center">
-            <h1 className="text-2xl" style={{ fontFamily: 'Pacifico, cursive' }}>Youcandleit</h1>
-          </div>
-          {/* 추후: 알림, 언어 선택, 프로필 추가 */}
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-center">
+          <h1 className="text-2xl" style={{ fontFamily: 'Pacifico, cursive' }}>Youcandleit</h1>
         </div>
       </header>
 
