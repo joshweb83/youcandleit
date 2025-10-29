@@ -4,10 +4,10 @@
  * 특정 집회의 상세 정보와 댓글을 표시합니다.
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Calendar, MapPin, Clock, ArrowLeft, Sparkles, Flame, Heart, Bell, BellOff, Layers, Video } from 'lucide-react'
+import { Calendar, MapPin, Clock, ArrowLeft, Sparkles, Flame, Heart, Bell, BellOff, Layers, Video, MapPinCheck } from 'lucide-react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import { useEvents } from '@/hooks/useEvents'
 import { useComments } from '@/hooks/useComments'
@@ -15,9 +15,29 @@ import { useCandles } from '@/hooks/useCandles'
 import { useAuth } from '@/hooks/useAuth'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useNotifications } from '@/hooks/useNotifications'
+import { createCheckIn, getUserCheckIn } from '@/services/firebase/firestore'
 import { CommentForm } from '@/components/comment/CommentForm'
 import { NotificationPrompt } from '@/components/notification/NotificationPrompt'
 import 'leaflet/dist/leaflet.css'
+
+// 익명 사용자 ID 생성
+function generateAnonymousId(): string {
+  return `anon-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+}
+
+// 두 지점 간의 거리 계산 (Haversine formula) - km 단위
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371 // 지구 반지름 (km)
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
 
 // YouTube URL을 임베드 URL로 변환
 function getYouTubeEmbedUrl(url: string): string {
@@ -65,7 +85,7 @@ export function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const { isAuthenticated } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const { events, loading: eventsLoading } = useEvents()
   const { comments, loading: commentsLoading, refetch: refetchComments } = useComments(id)
   const { isFavorite, toggleFavorite } = useFavorites()
@@ -82,6 +102,11 @@ export function EventDetailPage() {
   const [selectedTile, setSelectedTile] = useState<MapTileType>('dark')
   const [showTileSelector, setShowTileSelector] = useState(false)
 
+  // 현장 인증 관련 상태
+  const [isCheckedIn, setIsCheckedIn] = useState(false)
+  const [isCheckingIn, setIsCheckingIn] = useState(false)
+  const [checkInError, setCheckInError] = useState<string | null>(null)
+
   const event = events.find((e) => e.id === id)
   const { myCandle, onsiteCount, remoteCount, lightCandle, blowCandle, isLit } = useCandles({
     eventId: id,
@@ -89,6 +114,134 @@ export function EventDetailPage() {
   })
 
   const loading = eventsLoading || commentsLoading
+
+  // 사용자가 이미 인증했는지 확인
+  useEffect(() => {
+    const checkUserCheckIn = async () => {
+      if (!id) return
+
+      const userId = isAuthenticated ? user?.uid : localStorage.getItem('anonymousUserId')
+      if (!userId) return
+
+      const checkIn = await getUserCheckIn(id, userId)
+      setIsCheckedIn(!!checkIn)
+    }
+
+    checkUserCheckIn()
+  }, [id, isAuthenticated, user])
+
+  // 현장 인증 핸들러
+  const handleCheckIn = async () => {
+    if (!id || !event) return
+
+    setIsCheckingIn(true)
+    setCheckInError(null)
+
+    try {
+      // 위치 권한 요청 및 현재 위치 가져오기
+      if (!('geolocation' in navigator)) {
+        setCheckInError('이 브라우저는 위치 서비스를 지원하지 않습니다.')
+        setIsCheckingIn(false)
+        return
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const userLat = position.coords.latitude
+          const userLng = position.coords.longitude
+
+          // 행사 위치와의 거리 계산
+          const distance = calculateDistance(
+            userLat,
+            userLng,
+            event.location.coordinates.lat,
+            event.location.coordinates.lng
+          )
+
+          // 500m 이내에 있는지 확인
+          const maxDistance = event.location.radius ? event.location.radius / 1000 : 0.5 // km 단위
+          if (distance > maxDistance) {
+            setCheckInError(
+              `현장에서 ${Math.round(maxDistance * 1000)}m 이내에 있어야 인증할 수 있습니다. (현재 거리: ${Math.round(distance * 1000)}m)`
+            )
+            setIsCheckingIn(false)
+            return
+          }
+
+          // 사용자 정보 준비
+          let userId = user?.uid
+          let userName = user?.displayName || '사용자'
+          let isAnonymous = false
+
+          if (!isAuthenticated) {
+            // 익명 사용자
+            isAnonymous = true
+            const storedUserId = localStorage.getItem('anonymousUserId')
+            if (storedUserId) {
+              userId = storedUserId
+            } else {
+              userId = generateAnonymousId()
+              localStorage.setItem('anonymousUserId', userId)
+            }
+            userName = localStorage.getItem('anonymousUserName') || '익명'
+          }
+
+          // userId가 없으면 에러
+          if (!userId) {
+            setCheckInError('사용자 정보를 확인할 수 없습니다.')
+            setIsCheckingIn(false)
+            return
+          }
+
+          // Firebase에 인증 저장
+          const checkInId = await createCheckIn({
+            eventId: id,
+            userId,
+            userName,
+            location: {
+              lat: userLat,
+              lng: userLng,
+            },
+            isAnonymous,
+          })
+
+          if (checkInId) {
+            setIsCheckedIn(true)
+            setCheckInError(null)
+            alert('현장 참여 인증이 완료되었습니다! 🎉')
+          } else {
+            setCheckInError('인증 처리 중 오류가 발생했습니다.')
+          }
+
+          setIsCheckingIn(false)
+        },
+        (error) => {
+          console.error('위치 가져오기 실패:', error)
+          let errorMessage = '위치 정보를 가져올 수 없습니다.'
+
+          if (error.code === error.PERMISSION_DENIED) {
+            errorMessage = '위치 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해주세요.'
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            errorMessage = '위치 정보를 사용할 수 없습니다.'
+          } else if (error.code === error.TIMEOUT) {
+            errorMessage = '위치 정보 요청 시간이 초과되었습니다.'
+          }
+
+          setCheckInError(errorMessage)
+          setIsCheckingIn(false)
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        }
+      )
+    } catch (error) {
+      console.error('인증 처리 실패:', error)
+      setCheckInError('인증 처리 중 오류가 발생했습니다.')
+      setIsCheckingIn(false)
+    }
+  }
 
   const handleToggleCandle = async () => {
     if (!id) return
@@ -386,6 +539,38 @@ export function EventDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* 현장 참여 인증 버튼 */}
+        <button
+          onClick={handleCheckIn}
+          disabled={isCheckedIn || isCheckingIn}
+          className={`w-full py-4 rounded-lg font-bold text-lg transition-all mb-3 ${
+            isCheckedIn
+              ? 'bg-green-600 text-white cursor-not-allowed'
+              : isCheckingIn
+                ? 'bg-gray-700 text-gray-400 cursor-wait'
+                : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-3">
+            <MapPinCheck className={`w-6 h-6 ${isCheckingIn ? 'animate-pulse' : ''}`} />
+            <span>
+              {isCheckedIn ? '현장 참여 인증 완료 ✓' : isCheckingIn ? '위치 확인 중...' : '현장 참여 인증하기'}
+            </span>
+          </div>
+          {isCheckedIn && (
+            <div className="text-sm mt-2 opacity-90">
+              지도에 내 위치가 표시됩니다
+            </div>
+          )}
+        </button>
+
+        {/* 인증 에러 메시지 */}
+        {checkInError && (
+          <div className="mb-3 p-3 bg-red-900/20 border border-red-700 rounded-lg text-red-400 text-sm">
+            {checkInError}
+          </div>
+        )}
 
         {/* 촛불 켜기/끄기 버튼 */}
         {isAuthenticated && (

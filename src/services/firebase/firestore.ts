@@ -23,6 +23,7 @@ import {
 } from 'firebase/firestore'
 import type { Event, EventInput } from '@/types/event.types'
 import type { Comment, CommentInput } from '@/types/comment.types'
+import type { CheckIn, CheckInInput } from '@/types/checkin.types'
 
 /**
  * 집회 목록 가져오기
@@ -294,5 +295,111 @@ export async function fetchFavoriteEvents(eventIds: string[]): Promise<Event[]> 
   } catch (error) {
     console.error('즐겨찾기 집회 목록 가져오기 실패:', error)
     return []
+  }
+}
+
+/**
+ * 참여 인증 생성
+ */
+export async function createCheckIn(checkInData: CheckInInput): Promise<string | null> {
+  if (!db) {
+    console.warn('Firestore가 초기화되지 않았습니다.')
+    return null
+  }
+
+  try {
+    const checkInsRef = collection(db!, 'checkIns')
+
+    // 이미 인증했는지 확인
+    const existingCheckIn = await getUserCheckIn(checkInData.eventId, checkInData.userId)
+    if (existingCheckIn) {
+      console.log('이미 인증한 사용자입니다.')
+      return existingCheckIn.id
+    }
+
+    const docRef = await addDoc(checkInsRef, {
+      ...checkInData,
+      checkedInAt: Timestamp.now(),
+    })
+
+    // 집회의 participantCount 증가
+    const eventRef = doc(db, 'events', checkInData.eventId)
+    const eventSnap = await getDoc(eventRef)
+    if (eventSnap.exists()) {
+      const currentCount = eventSnap.data()?.participantCount || 0
+      await updateDoc(eventRef, {
+        participantCount: currentCount + 1,
+        updatedAt: Timestamp.now(),
+      })
+    }
+
+    return docRef.id
+  } catch (error) {
+    console.error('참여 인증 생성 실패:', error)
+    return null
+  }
+}
+
+/**
+ * 특정 이벤트의 모든 참여 인증 가져오기
+ */
+export async function fetchCheckIns(eventId: string): Promise<CheckIn[]> {
+  if (!db) {
+    console.warn('Firestore가 초기화되지 않았습니다.')
+    return []
+  }
+
+  try {
+    const checkInsRef = collection(db!, 'checkIns')
+    const q = query(checkInsRef, where('eventId', '==', eventId), orderBy('checkedInAt', 'desc'))
+    const snapshot = await getDocs(q)
+
+    return snapshot.docs.map((doc) => {
+      const data = doc.data()
+      return {
+        id: doc.id,
+        ...data,
+        checkedInAt: data.checkedInAt.toDate(),
+      } as CheckIn
+    })
+  } catch (error) {
+    console.error('참여 인증 목록 가져오기 실패:', error)
+    return []
+  }
+}
+
+/**
+ * 특정 사용자가 특정 이벤트에 인증했는지 확인
+ */
+export async function getUserCheckIn(eventId: string, userId: string): Promise<CheckIn | null> {
+  if (!db) {
+    console.warn('Firestore가 초기화되지 않았습니다.')
+    return null
+  }
+
+  try {
+    const checkInsRef = collection(db!, 'checkIns')
+    const q = query(
+      checkInsRef,
+      where('eventId', '==', eventId),
+      where('userId', '==', userId),
+      limit(1)
+    )
+    const snapshot = await getDocs(q)
+
+    if (snapshot.empty) {
+      return null
+    }
+
+    const doc = snapshot.docs[0]
+    const data = doc.data()
+    return {
+      id: doc.id,
+      ...data,
+      checkedInAt: data.checkedInAt.toDate(),
+    } as CheckIn
+  } catch (error) {
+    console.error('사용자 인증 확인 실패:', error)
+    return null
   }
 }

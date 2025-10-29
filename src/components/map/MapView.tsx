@@ -4,13 +4,15 @@
  * 다양한 지도 타일 레이어를 선택할 수 있습니다.
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 'react-leaflet'
 import { LatLngExpression } from 'leaflet'
 import { useNavigate } from 'react-router-dom'
 import { Layers } from 'lucide-react'
 import type { Event } from '@/types/event.types'
+import type { CheckIn } from '@/types/checkin.types'
 import { useCandles } from '@/hooks/useCandles'
+import { fetchCheckIns } from '@/services/firebase/firestore'
 import 'leaflet/dist/leaflet.css'
 
 // Leaflet 아이콘 수정 (Vite에서 기본 아이콘이 깨지는 문제 해결)
@@ -77,6 +79,23 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
   const { candles } = useCandles()
   const [selectedTile, setSelectedTile] = useState<MapTileType>('dark')
   const [showTileSelector, setShowTileSelector] = useState(false)
+  const [checkIns, setCheckIns] = useState<CheckIn[]>([])
+
+  // 모든 이벤트의 체크인 데이터 가져오기
+  useEffect(() => {
+    const loadCheckIns = async () => {
+      const allCheckIns: CheckIn[] = []
+      for (const event of events) {
+        const eventCheckIns = await fetchCheckIns(event.id)
+        allCheckIns.push(...eventCheckIns)
+      }
+      setCheckIns(allCheckIns)
+    }
+
+    if (events.length > 0) {
+      loadCheckIns()
+    }
+  }, [events])
 
   // 위치 정보가 있는 촛불만 필터링 (onsite candles)
   const candlesWithLocation = candles.filter(
@@ -194,7 +213,7 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
         {/* 촛불 마커 (현장 참여자) */}
         {candlesWithLocation.map((candle, index) => (
           <CircleMarker
-            key={`${candle.userId}-${candle.eventId}-${index}`}
+            key={`candle-${candle.userId}-${candle.eventId}-${index}`}
             center={[candle.location!.lat, candle.location!.lng]}
             radius={8}
             pathOptions={{
@@ -213,6 +232,37 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   {new Date(candle.timestamp).toLocaleTimeString('ko-KR')}
+                </div>
+              </div>
+            </Popup>
+          </CircleMarker>
+        ))}
+
+        {/* 체크인 마커 (현장 인증 참여자) */}
+        {checkIns.map((checkIn, index) => (
+          <CircleMarker
+            key={`checkin-${checkIn.userId}-${checkIn.eventId}-${index}`}
+            center={[checkIn.location.lat, checkIn.location.lng]}
+            radius={10}
+            pathOptions={{
+              fillColor: '#FCD34D', // yellow-400
+              fillOpacity: 0.9,
+              color: '#F59E0B', // orange-500
+              weight: 3,
+              opacity: 1,
+            }}
+          >
+            <Popup>
+              <div className="text-gray-900">
+                <div className="text-3xl mb-2">🕯️</div>
+                <div className="text-sm font-bold mb-1">
+                  {checkIn.userName}
+                </div>
+                <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded inline-block mb-1">
+                  현장 인증 완료
+                </div>
+                <div className="text-xs text-gray-500">
+                  {new Date(checkIn.checkedInAt).toLocaleString('ko-KR')}
                 </div>
               </div>
             </Popup>
