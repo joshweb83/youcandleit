@@ -151,16 +151,19 @@ export function AdminEventCreatePage() {
           {/* 요약 */}
           <div>
             <label htmlFor="summary" className="block text-sm font-medium mb-2">
-              한 줄 요약
+              한 줄 요약 <span className="text-gray-400 text-xs">(목록 표출용)</span>
             </label>
             <input
               id="summary"
               type="text"
               value={formData.summary}
               onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-              placeholder="집회를 한 문장으로 설명하세요"
+              placeholder="집회를 한 문장으로 설명하세요 (집회 목록에만 표시됩니다)"
               className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              ℹ️ 이 요약은 집회 목록 페이지에만 표시되며, 상세 페이지에는 표시되지 않습니다.
+            </p>
           </div>
 
           {/* 설명 */}

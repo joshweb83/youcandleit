@@ -70,12 +70,8 @@ export function WeatherPopup({ isOpen, onClose, weather, loading, error }: Weath
 
                 {/* 메인 날씨 정보 */}
                 <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <img
-                      src={getWeatherIconUrl(weather.weather.icon)}
-                      alt={weather.weather.description}
-                      className="w-20 h-20"
-                    />
+                  <div className="text-6xl mb-3">
+                    {getWeatherIconUrl(weather.weather.icon)}
                   </div>
                   <div className="text-5xl font-bold mb-2">
                     {weather.temp}°C
@@ -132,7 +128,7 @@ export function WeatherPopup({ isOpen, onClose, weather, loading, error }: Weath
 
                 {/* 안내 메시지 */}
                 <div className="text-xs text-gray-500 text-center">
-                  ℹ️ OpenWeatherMap API 제공
+                  ℹ️ Open-Meteo API 제공
                 </div>
               </div>
             )}
