@@ -24,23 +24,20 @@ export function MainLayout({ children }: MainLayoutProps) {
     <div className="h-screen flex flex-col bg-gray-900 text-white overflow-hidden">
       {/* 헤더 */}
       <header className="bg-gray-800 border-b border-gray-700 z-40 flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          {/* 햄버거 메뉴 아이콘 */}
+        <div className="max-w-7xl mx-auto px-4 py-3 relative flex items-center justify-center">
+          {/* 로고 (중앙 정렬) */}
+          <Link to="/" className="cursor-pointer hover:opacity-80 transition-opacity">
+            <h1 className="text-2xl" style={{ fontFamily: 'Pacifico, cursive' }}>youcandleit</h1>
+          </Link>
+
+          {/* 햄버거 메뉴 아이콘 (우측 고정) */}
           <button
             onClick={() => setIsMenuOpen(true)}
-            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+            className="absolute right-4 p-2 hover:bg-gray-700 rounded-lg transition-colors"
             aria-label="메뉴 열기"
           >
             <Menu className="w-6 h-6" />
           </button>
-
-          {/* 로고 (중앙 정렬) */}
-          <Link to="/" className="absolute left-1/2 transform -translate-x-1/2 cursor-pointer hover:opacity-80 transition-opacity">
-            <h1 className="text-2xl" style={{ fontFamily: 'Pacifico, cursive' }}>youcandleit</h1>
-          </Link>
-
-          {/* 오른쪽 빈 공간 (대칭을 위해) */}
-          <div className="w-10"></div>
         </div>
       </header>
 
