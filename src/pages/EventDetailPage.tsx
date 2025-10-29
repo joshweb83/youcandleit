@@ -7,8 +7,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Calendar, MapPin, Clock, ArrowLeft, Sparkles, Flame, Heart, Bell, BellOff, Layers, Video, MapPinCheck } from 'lucide-react'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { Calendar, MapPin, Clock, ArrowLeft, Sparkles, Flame, Heart, Bell, BellOff, Layers, Video, MapPinCheck, MessageSquare, ChevronDown, ChevronUp, Navigation, CloudSun } from 'lucide-react'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import L from 'leaflet'
 import { useEvents } from '@/hooks/useEvents'
 import { useComments } from '@/hooks/useComments'
 import { useCandles } from '@/hooks/useCandles'
@@ -18,6 +19,8 @@ import { useNotifications } from '@/hooks/useNotifications'
 import { createCheckIn, getUserCheckIn } from '@/services/firebase/firestore'
 import { CommentForm } from '@/components/comment/CommentForm'
 import { NotificationPrompt } from '@/components/notification/NotificationPrompt'
+import { WeatherPopup } from '@/components/weather/WeatherPopup'
+import { getWeatherByCoordinates, type WeatherData } from '@/services/weather/api'
 import 'leaflet/dist/leaflet.css'
 
 // 익명 사용자 ID 생성
@@ -101,6 +104,31 @@ const MAP_TILES = {
 
 type MapTileType = keyof typeof MAP_TILES
 
+// 지도 중심 이동을 위한 헬퍼 컴포넌트
+function MapCenterController({ center }: { center: [number, number] | null }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (center) {
+      map.setView(center, 15, { animate: true })
+    }
+  }, [center, map])
+
+  return null
+}
+
+// 사용자 위치 마커를 위한 커스텀 아이콘
+const userLocationIcon = new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10" fill="#3b82f6" fill-opacity="0.2"/>
+      <circle cx="12" cy="12" r="4" fill="#3b82f6"/>
+    </svg>
+  `),
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+})
+
 export function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -121,6 +149,15 @@ export function EventDetailPage() {
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false)
   const [selectedTile, setSelectedTile] = useState<MapTileType>('dark')
   const [showTileSelector, setShowTileSelector] = useState(false)
+  const [showLiveChat, setShowLiveChat] = useState(true) // 라이브 채팅 표시 여부
+
+  // 지도 관련 상태
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [showWeatherPopup, setShowWeatherPopup] = useState(false)
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
+  const [weatherLoading, setWeatherLoading] = useState(false)
+  const [weatherError, setWeatherError] = useState<string | null>(null)
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null)
 
   // 현장 인증 관련 상태
   const [isCheckedIn, setIsCheckedIn] = useState(false)
@@ -310,6 +347,79 @@ export function EventDetailPage() {
     } else {
       alert('알림 권한이 거부되었습니다. 브라우저 설정에서 알림을 허용해주세요.')
     }
+  }
+
+  // 현재 위치로 지도 이동
+  const handleGoToCurrentLocation = () => {
+    if (!('geolocation' in navigator)) {
+      alert('이 브라우저는 위치 서비스를 지원하지 않습니다.')
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude
+        const lng = position.coords.longitude
+        setUserLocation({ lat, lng })
+        setMapCenter([lat, lng])
+      },
+      (error) => {
+        console.error('위치 가져오기 실패:', error)
+        let errorMessage = '위치 정보를 가져올 수 없습니다.'
+        if (error.code === error.PERMISSION_DENIED) {
+          errorMessage = '위치 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해주세요.'
+        }
+        alert(errorMessage)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    )
+  }
+
+  // 날씨 정보 가져오기
+  const handleShowWeather = async () => {
+    if (!('geolocation' in navigator)) {
+      alert('이 브라우저는 위치 서비스를 지원하지 않습니다.')
+      return
+    }
+
+    setShowWeatherPopup(true)
+    setWeatherLoading(true)
+    setWeatherError(null)
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude
+        const lng = position.coords.longitude
+
+        try {
+          const weather = await getWeatherByCoordinates(lat, lng)
+          setWeatherData(weather)
+          setWeatherLoading(false)
+        } catch (error) {
+          console.error('날씨 정보 가져오기 실패:', error)
+          setWeatherError('날씨 정보를 가져오는데 실패했습니다. 다시 시도해주세요.')
+          setWeatherLoading(false)
+        }
+      },
+      (error) => {
+        console.error('위치 가져오기 실패:', error)
+        let errorMessage = '위치 정보를 가져올 수 없습니다.'
+        if (error.code === error.PERMISSION_DENIED) {
+          errorMessage = '위치 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해주세요.'
+        }
+        setWeatherError(errorMessage)
+        setWeatherLoading(false)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000, // 5분간 캐시
+      }
+    )
   }
 
   // 이벤트를 찾지 못했을 때
@@ -504,21 +614,60 @@ export function EventDetailPage() {
                   </div>
                 </Popup>
               </Marker>
+
+              {/* 사용자 위치 마커 */}
+              {userLocation && (
+                <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
+                  <Popup>
+                    <div className="text-sm">
+                      <div className="font-bold mb-1">내 위치</div>
+                      <div className="text-gray-600 text-xs">
+                        {userLocation.lat.toFixed(6)}, {userLocation.lng.toFixed(6)}
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              )}
+
+              {/* 지도 중심 컨트롤러 */}
+              <MapCenterController center={mapCenter} />
             </MapContainer>
 
-            {/* 지도 타일 선택 버튼 */}
-            <div className="absolute top-2 right-2 z-[1000]">
+            {/* 지도 컨트롤 버튼들 */}
+            <div className="absolute top-2 right-2 z-[1000] flex flex-col space-y-2">
+              {/* 현재 위치 버튼 */}
+              <button
+                onClick={handleGoToCurrentLocation}
+                className="bg-gray-800 hover:bg-gray-700 text-white p-2 rounded shadow-lg transition-colors"
+                aria-label="현재 위치 보기"
+                title="현재 위치 보기"
+              >
+                <Navigation className="w-4 h-4" />
+              </button>
+
+              {/* 날씨 보기 버튼 */}
+              <button
+                onClick={handleShowWeather}
+                className="bg-gray-800 hover:bg-gray-700 text-white p-2 rounded shadow-lg transition-colors"
+                aria-label="날씨 보기"
+                title="날씨 보기"
+              >
+                <CloudSun className="w-4 h-4" />
+              </button>
+
+              {/* 지도 타일 선택 버튼 */}
               <button
                 onClick={() => setShowTileSelector(!showTileSelector)}
                 className="bg-gray-800 hover:bg-gray-700 text-white p-2 rounded shadow-lg transition-colors"
                 aria-label="지도 타일 선택"
+                title="지도 스타일 변경"
               >
                 <Layers className="w-4 h-4" />
               </button>
 
               {/* 타일 선택 메뉴 */}
               {showTileSelector && (
-                <div className="absolute top-10 right-0 bg-gray-800 rounded-lg shadow-xl p-2 min-w-[120px]">
+                <div className="absolute top-[120px] right-0 bg-gray-800 rounded-lg shadow-xl p-2 min-w-[120px]">
                   {(Object.keys(MAP_TILES) as MapTileType[]).map((tileKey) => (
                     <button
                       key={tileKey}
@@ -544,13 +693,26 @@ export function EventDetailPage() {
         {/* 실시간 방송 */}
         {event.liveStreamUrl && (
           <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center space-x-2">
-              <Video className="w-4 h-4" />
-              <span>실시간 방송</span>
-            </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-400 flex items-center space-x-2">
+                <Video className="w-4 h-4" />
+                <span>실시간 방송</span>
+              </h3>
+
+              {/* 채팅 토글 버튼 */}
+              <button
+                onClick={() => setShowLiveChat(!showLiveChat)}
+                className="flex items-center space-x-2 px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>{showLiveChat ? '채팅 숨기기' : '채팅 보기'}</span>
+                {showLiveChat ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+
+            <div className={`grid grid-cols-1 ${showLiveChat ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-4`}>
               {/* 영상 */}
-              <div className="lg:col-span-2">
+              <div className={showLiveChat ? 'lg:col-span-2' : 'lg:col-span-1'}>
                 <div className="aspect-video rounded-lg overflow-hidden border border-gray-700 bg-black">
                   <iframe
                     src={getYouTubeEmbedUrl(event.liveStreamUrl)}
@@ -563,25 +725,27 @@ export function EventDetailPage() {
               </div>
 
               {/* 라이브 채팅 */}
-              <div className="lg:col-span-1">
-                <div className="h-[300px] lg:h-full rounded-lg overflow-hidden border border-gray-700 bg-black">
-                  {getYouTubeLiveChatUrl(event.liveStreamUrl) ? (
-                    <iframe
-                      src={getYouTubeLiveChatUrl(event.liveStreamUrl)!}
-                      title={`${event.title} 라이브 채팅`}
-                      className="w-full h-full"
-                      allowFullScreen
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-500">
-                      <div className="text-center">
-                        <p className="text-sm">💬</p>
-                        <p className="text-xs mt-2">라이브 채팅을 불러올 수 없습니다</p>
+              {showLiveChat && (
+                <div className="lg:col-span-1">
+                  <div className="h-[300px] lg:h-full rounded-lg overflow-hidden border border-gray-700 bg-black">
+                    {getYouTubeLiveChatUrl(event.liveStreamUrl) ? (
+                      <iframe
+                        src={getYouTubeLiveChatUrl(event.liveStreamUrl)!}
+                        title={`${event.title} 라이브 채팅`}
+                        className="w-full h-full"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-500">
+                        <div className="text-center">
+                          <p className="text-sm">💬</p>
+                          <p className="text-xs mt-2">라이브 채팅을 불러올 수 없습니다</p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         )}
@@ -727,6 +891,15 @@ export function EventDetailPage() {
           </div>
         )}
       </div>
+
+      {/* 날씨 팝업 */}
+      <WeatherPopup
+        isOpen={showWeatherPopup}
+        onClose={() => setShowWeatherPopup(false)}
+        weather={weatherData}
+        loading={weatherLoading}
+        error={weatherError}
+      />
     </div>
   )
 }

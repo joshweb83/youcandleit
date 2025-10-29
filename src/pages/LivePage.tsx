@@ -6,7 +6,7 @@
 
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, MapPin, Users, ExternalLink } from 'lucide-react'
+import { Calendar, MapPin, Users } from 'lucide-react'
 import { useEvents } from '@/hooks/useEvents'
 
 // YouTube URL을 임베드 URL로 변환
@@ -85,7 +85,12 @@ export function LivePage() {
               {/* 집회 정보 */}
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
-                  <h2 className="text-2xl font-bold flex-1">{event.title}</h2>
+                  <button
+                    onClick={() => navigate(`/events/${event.id}`)}
+                    className="text-2xl font-bold flex-1 text-left hover:text-yellow-500 transition-colors cursor-pointer"
+                  >
+                    {event.title}
+                  </button>
                   <span className="px-3 py-1 bg-red-500 text-white text-xs font-semibold rounded-full">
                     LIVE
                   </span>
@@ -93,7 +98,7 @@ export function LivePage() {
 
                 <p className="text-gray-300 mb-4">{event.summary}</p>
 
-                <div className="flex flex-wrap gap-4 text-sm text-gray-400 mb-6">
+                <div className="flex flex-wrap gap-4 text-sm text-gray-400">
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-4 h-4" />
                     <span>{new Date(event.datetime.start).toLocaleString('ko-KR')}</span>
@@ -106,27 +111,6 @@ export function LivePage() {
                     <Users className="w-4 h-4" />
                     <span>{event.participantCount.toLocaleString()}명</span>
                   </div>
-                </div>
-
-                {/* 버튼 그룹 */}
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => navigate(`/events/${event.id}`)}
-                    className="flex-1 px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-lg transition-colors"
-                  >
-                    집회 상세보기
-                  </button>
-                  {event.liveStreamUrl && (
-                    <a
-                      href={event.liveStreamUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg transition-colors flex items-center space-x-2"
-                    >
-                      <ExternalLink className="w-5 h-5" />
-                      <span>YouTube에서 보기</span>
-                    </a>
-                  )}
                 </div>
               </div>
             </div>
