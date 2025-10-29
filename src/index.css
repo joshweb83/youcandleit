@@ -30,3 +30,24 @@ body {
 #root {
   width: 100%;
 }
+
+/* Leaflet Attribution 스타일 커스터마이징 */
+.leaflet-control-attribution {
+  background: none !important;
+  background-color: transparent !important;
+  color: #9CA3AF !important; /* gray-400 */
+  font-size: 10px !important;
+  opacity: 0.6 !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 2px 4px !important;
+}
+
+.leaflet-control-attribution a {
+  color: #9CA3AF !important; /* gray-400 */
+  text-decoration: none !important;
+}
+
+.leaflet-control-attribution a:hover {
+  color: #D1D5DB !important; /* gray-300 */
+}

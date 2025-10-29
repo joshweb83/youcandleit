@@ -4,13 +4,33 @@
  * 모든 집회를 카드 형태로 표시합니다.
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Search, Calendar, MapPin, Users, Plus, Heart } from 'lucide-react'
+import { Search, Plus, Heart, Calendar, MapPin, Users } from 'lucide-react'
 import { useEvents } from '@/hooks/useEvents'
 import { useFavorites } from '@/hooks/useFavorites'
 import { SearchFilter, type FilterState } from '@/components/event/SearchFilter'
+
+// 두 좌표 간 거리 계산 (Haversine formula, km 단위)
+function calculateDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371 // 지구 반경 (km)
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
 
 export function EventListPage() {
   const { t } = useTranslation()
@@ -20,12 +40,33 @@ export function EventListPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterOpen, setFilterOpen] = useState(false)
   const [filters, setFilters] = useState<FilterState>({
-    dateFrom: '',
-    dateTo: '',
-    status: 'all',
-    tags: '',
     sortBy: 'date',
   })
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+
+  // 사용자 위치 가져오기
+  useEffect(() => {
+    if (filters.sortBy === 'distance' && !userLocation) {
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setUserLocation({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            })
+          },
+          (error) => {
+            console.warn('위치 정보를 가져올 수 없습니다:', error)
+            // 서울 시청을 기본 위치로 설정
+            setUserLocation({ lat: 37.5665, lng: 126.978 })
+          }
+        )
+      } else {
+        // GPS를 지원하지 않으면 서울 시청 기본 위치
+        setUserLocation({ lat: 37.5665, lng: 126.978 })
+      }
+    }
+  }, [filters.sortBy, userLocation])
 
   // 필터 및 정렬 로직
   const filteredEvents = useMemo(() => {
@@ -36,44 +77,7 @@ export function EventListPage() {
         event.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.description.toLowerCase().includes(searchTerm.toLowerCase())
 
-      if (!matchesSearch) return false
-
-      // 날짜 범위 필터
-      if (filters.dateFrom) {
-        const eventDate = new Date(event.datetime.start)
-        const fromDate = new Date(filters.dateFrom)
-        if (eventDate < fromDate) return false
-      }
-
-      if (filters.dateTo) {
-        const eventDate = new Date(event.datetime.start)
-        const toDate = new Date(filters.dateTo)
-        toDate.setHours(23, 59, 59, 999) // 종료일의 끝까지
-        if (eventDate > toDate) return false
-      }
-
-      // 상태 필터
-      if (filters.status !== 'all' && event.status !== filters.status) {
-        return false
-      }
-
-      // 태그 필터
-      if (filters.tags) {
-        const searchTags = filters.tags
-          .split(',')
-          .map((tag) => tag.trim().toLowerCase())
-          .filter((tag) => tag.length > 0)
-
-        const hasMatchingTag = searchTags.some((searchTag) =>
-          event.tags.some((eventTag) =>
-            eventTag.toLowerCase().includes(searchTag)
-          )
-        )
-
-        if (!hasMatchingTag) return false
-      }
-
-      return true
+      return matchesSearch
     })
 
     // 정렬
@@ -83,20 +87,26 @@ export function EventListPage() {
       })
     } else if (filters.sortBy === 'participants') {
       result.sort((a, b) => b.participantCount - a.participantCount)
+    } else if (filters.sortBy === 'distance' && userLocation) {
+      result.sort((a, b) => {
+        const distA = calculateDistance(
+          userLocation.lat,
+          userLocation.lng,
+          a.location.coordinates.lat,
+          a.location.coordinates.lng
+        )
+        const distB = calculateDistance(
+          userLocation.lat,
+          userLocation.lng,
+          b.location.coordinates.lat,
+          b.location.coordinates.lng
+        )
+        return distA - distB
+      })
     }
 
     return result
-  }, [events, searchTerm, filters])
-
-  const handleResetFilters = () => {
-    setFilters({
-      dateFrom: '',
-      dateTo: '',
-      status: 'all',
-      tags: '',
-      sortBy: 'date',
-    })
-  }
+  }, [events, searchTerm, filters, userLocation])
 
   if (loading) {
     return (
@@ -116,11 +126,10 @@ export function EventListPage() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-3xl font-bold">{t('event.list')}</h1>
 
-          {/* 필터 버튼 */}
+          {/* 정렬 버튼 */}
           <SearchFilter
             filters={filters}
             onFilterChange={setFilters}
-            onReset={handleResetFilters}
             isOpen={filterOpen}
             onToggle={() => setFilterOpen(!filterOpen)}
           />
@@ -212,15 +221,12 @@ export function EventListPage() {
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🔍</div>
           <p className="text-gray-400 mb-2">검색 결과가 없습니다</p>
-          {(searchTerm || filters.dateFrom || filters.dateTo || filters.status !== 'all' || filters.tags) && (
+          {searchTerm && (
             <button
-              onClick={() => {
-                setSearchTerm('')
-                handleResetFilters()
-              }}
+              onClick={() => setSearchTerm('')}
               className="text-yellow-500 hover:text-yellow-400 text-sm underline"
             >
-              검색 및 필터 초기화
+              검색 초기화
             </button>
           )}
         </div>

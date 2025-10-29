@@ -1,23 +1,19 @@
 /**
  * SearchFilter 컴포넌트
  *
- * 집회 검색 및 필터링 UI를 제공합니다.
+ * 정렬 옵션을 제공하는 오버레이 모달
  */
 
-import { Filter, X, Calendar, Tag } from 'lucide-react'
+import { ArrowUpDown, X, Clock, Users, MapPin } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export interface FilterState {
-  dateFrom: string
-  dateTo: string
-  status: string // 'all' | 'scheduled' | 'ongoing' | 'ended'
-  tags: string
-  sortBy: string // 'date' | 'participants'
+  sortBy: string // 'date' | 'participants' | 'distance'
 }
 
 interface SearchFilterProps {
   filters: FilterState
   onFilterChange: (filters: FilterState) => void
-  onReset: () => void
   isOpen: boolean
   onToggle: () => void
 }
@@ -25,134 +21,118 @@ interface SearchFilterProps {
 export function SearchFilter({
   filters,
   onFilterChange,
-  onReset,
   isOpen,
   onToggle,
 }: SearchFilterProps) {
-  const handleChange = (field: keyof FilterState, value: string) => {
-    onFilterChange({ ...filters, [field]: value })
+  const { i18n } = useTranslation()
+  const isKorean = i18n.language === 'ko'
+
+  const handleSortChange = (sortBy: string) => {
+    onFilterChange({ sortBy })
+    onToggle() // 선택 후 모달 닫기
   }
 
-  const hasActiveFilters =
-    filters.dateFrom ||
-    filters.dateTo ||
-    filters.status !== 'all' ||
-    filters.tags ||
-    filters.sortBy !== 'date'
+  const sortOptions = [
+    {
+      value: 'date',
+      icon: Clock,
+      labelKo: '최신순',
+      labelEn: 'Latest',
+      descKo: '최신 집회부터 표시',
+      descEn: 'Show newest events first',
+    },
+    {
+      value: 'participants',
+      icon: Users,
+      labelKo: '인원순',
+      labelEn: 'Participants',
+      descKo: '참여자가 많은 순서',
+      descEn: 'Most participants first',
+    },
+    {
+      value: 'distance',
+      icon: MapPin,
+      labelKo: '거리순',
+      labelEn: 'Distance',
+      descKo: '가까운 집회부터 표시',
+      descEn: 'Nearest events first',
+    },
+  ]
 
   return (
-    <div className="mb-6">
-      {/* 필터 토글 버튼 */}
+    <>
+      {/* 정렬 버튼 */}
       <button
         onClick={onToggle}
-        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-          hasActiveFilters
-            ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
-            : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-        }`}
+        className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors bg-gray-800 hover:bg-gray-700 text-gray-300"
       >
-        <Filter className="w-4 h-4" />
-        <span>필터</span>
-        {hasActiveFilters && (
-          <span className="bg-white text-yellow-600 text-xs font-bold px-2 py-0.5 rounded-full">
-            활성
-          </span>
-        )}
+        <ArrowUpDown className="w-4 h-4" />
+        <span>{isKorean ? '정렬' : 'Sort'}</span>
       </button>
 
-      {/* 필터 패널 */}
+      {/* 오버레이 모달 */}
       {isOpen && (
-        <div className="mt-4 bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold">검색 필터</h3>
-            {hasActiveFilters && (
-              <button
-                onClick={onReset}
-                className="flex items-center space-x-1 text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                <X className="w-4 h-4" />
-                <span>초기화</span>
-              </button>
-            )}
-          </div>
+        <>
+          {/* 배경 오버레이 */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-60 z-[100]"
+            onClick={onToggle}
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* 날짜 범위 */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold mb-2 flex items-center space-x-2">
-                <Calendar className="w-4 h-4 text-gray-400" />
-                <span>날짜 범위</span>
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">시작일</label>
-                  <input
-                    type="date"
-                    value={filters.dateFrom}
-                    onChange={(e) => handleChange('dateFrom', e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">종료일</label>
-                  <input
-                    type="date"
-                    value={filters.dateTo}
-                    onChange={(e) => handleChange('dateTo', e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white text-sm"
-                  />
-                </div>
+          {/* 모달 컨텐츠 */}
+          <div className="fixed inset-x-0 top-1/2 -translate-y-1/2 z-[101] px-4">
+            <div className="max-w-md mx-auto bg-gray-800 rounded-lg shadow-2xl border border-gray-700">
+              {/* 헤더 */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                <h3 className="text-lg font-bold">
+                  {isKorean ? '정렬 기준' : 'Sort By'}
+                </h3>
+                <button
+                  onClick={onToggle}
+                  className="p-1 hover:bg-gray-700 rounded transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* 정렬 옵션 */}
+              <div className="p-3 space-y-2">
+                {sortOptions.map((option) => {
+                  const Icon = option.icon
+                  const isSelected = filters.sortBy === option.value
+
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => handleSortChange(option.value)}
+                      className={`w-full text-left p-4 rounded-lg transition-all ${
+                        isSelected
+                          ? 'bg-yellow-600 text-white shadow-lg'
+                          : 'bg-gray-900 hover:bg-gray-700 text-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Icon className="w-5 h-5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <div className="font-semibold">
+                            {isKorean ? option.labelKo : option.labelEn}
+                          </div>
+                          <div className={`text-sm ${isSelected ? 'text-yellow-100' : 'text-gray-400'}`}>
+                            {isKorean ? option.descKo : option.descEn}
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             </div>
-
-            {/* 상태 필터 */}
-            <div>
-              <label className="block text-sm font-semibold mb-2">상태</label>
-              <select
-                value={filters.status}
-                onChange={(e) => handleChange('status', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-              >
-                <option value="all">전체</option>
-                <option value="scheduled">예정</option>
-                <option value="ongoing">진행중</option>
-                <option value="ended">종료</option>
-              </select>
-            </div>
-
-            {/* 정렬 */}
-            <div>
-              <label className="block text-sm font-semibold mb-2">정렬</label>
-              <select
-                value={filters.sortBy}
-                onChange={(e) => handleChange('sortBy', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-              >
-                <option value="date">날짜순</option>
-                <option value="participants">참여자순</option>
-              </select>
-            </div>
-
-            {/* 태그 검색 */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold mb-2 flex items-center space-x-2">
-                <Tag className="w-4 h-4 text-gray-400" />
-                <span>태그 검색</span>
-              </label>
-              <input
-                type="text"
-                value={filters.tags}
-                onChange={(e) => handleChange('tags', e.target.value)}
-                placeholder="태그로 검색 (쉼표로 구분)"
-                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                예: 민주주의, 정의, 평화
-              </p>
-            </div>
           </div>
-        </div>
+        </>
       )}
-    </div>
+    </>
   )
 }
