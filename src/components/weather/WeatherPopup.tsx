@@ -22,12 +22,12 @@ export function WeatherPopup({ isOpen, onClose, weather, loading, error }: Weath
     <>
       {/* 오버레이 */}
       <div
-        className="fixed inset-0 bg-black/70 z-50 transition-opacity"
+        className="fixed inset-0 bg-black/70 z-[100] transition-opacity"
         onClick={onClose}
       />
 
       {/* 팝업 */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none">
         <div
           className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-md pointer-events-auto border border-gray-700"
           onClick={(e) => e.stopPropagation()}
