@@ -481,8 +481,8 @@ export function EventDetailPage() {
       )}
 
       {/* 제목 배너 */}
-      <div className="bg-white rounded-lg p-4 mb-6 shadow-xl w-4/5 mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold text-center text-gray-900 truncate">
+      <div className="bg-white rounded-lg p-4 mb-6 shadow-xl">
+        <h1 className="text-2xl md:text-3xl font-bold text-center text-gray-900 truncate max-w-[80%] mx-auto">
           {event.title}
         </h1>
       </div>
