@@ -376,34 +376,45 @@ export function EventDetailPage() {
 
       {/* 집회 정보 */}
       <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-gray-700">
-        <div className="flex items-start justify-between mb-4">
-          <h1 className="text-3xl font-bold flex-1 pr-4">{event.title}</h1>
-          <div className="flex items-center space-x-3">
-            {/* 즐겨찾기 버튼 */}
-            <button
-              onClick={() => toggleFavorite(event.id)}
-              className="p-2 hover:bg-gray-700 rounded-full transition-colors"
-              aria-label="즐겨찾기 토글"
-            >
-              <Heart
-                className={`w-6 h-6 ${
-                  isFavorite(event.id)
-                    ? 'fill-red-500 text-red-500'
-                    : 'text-gray-400'
-                }`}
-              />
-            </button>
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                event.status === 'ongoing'
-                  ? 'bg-green-500/20 text-green-400'
-                  : event.status === 'scheduled'
-                    ? 'bg-yellow-500/20 text-yellow-400'
-                    : 'bg-gray-500/20 text-gray-400'
+        {/* 제목 */}
+        <h1 className="text-2xl font-bold mb-3">{event.title}</h1>
+
+        {/* 상태 정보 바 */}
+        <div className="flex items-center flex-wrap gap-3 mb-4">
+          {/* 즐겨찾기 버튼 */}
+          <button
+            onClick={() => toggleFavorite(event.id)}
+            className="p-2 hover:bg-gray-700 rounded-full transition-colors"
+            aria-label="즐겨찾기 토글"
+          >
+            <Heart
+              className={`w-5 h-5 ${
+                isFavorite(event.id)
+                  ? 'fill-red-500 text-red-500'
+                  : 'text-gray-400'
               }`}
-            >
-              {t(`event.${event.status}`)}
-            </span>
+            />
+          </button>
+
+          {/* 진행 상태 */}
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              event.status === 'ongoing'
+                ? 'bg-green-500/20 text-green-400'
+                : event.status === 'scheduled'
+                  ? 'bg-yellow-500/20 text-yellow-400'
+                  : 'bg-gray-500/20 text-gray-400'
+            }`}
+          >
+            {t(`event.${event.status}`)}
+          </span>
+
+          {/* 촛불 통계 */}
+          <div className="flex items-center space-x-1 text-sm">
+            <Flame className="w-4 h-4 text-yellow-500" />
+            <span className="text-white">🕯️ {onsiteCount}</span>
+            <span className="text-gray-400">·</span>
+            <span className="text-blue-400">🌐 {remoteCount}</span>
           </div>
         </div>
 
@@ -460,17 +471,6 @@ export function EventDetailPage() {
               {event.location.details && (
                 <div className="text-sm text-gray-400 mt-1">{event.location.details}</div>
               )}
-            </div>
-          </div>
-
-          <div className="flex items-start space-x-3">
-            <Flame className="w-5 h-5 text-yellow-500 mt-0.5" />
-            <div>
-              <div className="text-sm text-gray-400">촛불 켜진 수</div>
-              <div className="text-white">
-                🕯️ 현장 {onsiteCount}개
-                <span className="text-blue-400 ml-2">🌐 원격 {remoteCount}개</span>
-              </div>
             </div>
           </div>
         </div>
