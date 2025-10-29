@@ -7,7 +7,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Calendar, MapPin, Clock, ArrowLeft, Sparkles, Flame, Heart, Bell, BellOff } from 'lucide-react'
+import { Calendar, MapPin, Clock, ArrowLeft, Sparkles, Flame, Heart, Bell, BellOff, Layers, Video } from 'lucide-react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import { useEvents } from '@/hooks/useEvents'
 import { useComments } from '@/hooks/useComments'
@@ -18,6 +18,48 @@ import { useNotifications } from '@/hooks/useNotifications'
 import { CommentForm } from '@/components/comment/CommentForm'
 import { NotificationPrompt } from '@/components/notification/NotificationPrompt'
 import 'leaflet/dist/leaflet.css'
+
+// YouTube URL을 임베드 URL로 변환
+function getYouTubeEmbedUrl(url: string): string {
+  const match1 = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)
+  if (match1) {
+    return `https://www.youtube.com/embed/${match1[1]}`
+  }
+  const match2 = url.match(/youtube\.com\/live\/([^&\s]+)/)
+  if (match2) {
+    return `https://www.youtube.com/embed/${match2[1]}`
+  }
+  if (url.includes('youtube.com/embed/')) {
+    return url
+  }
+  return url
+}
+
+// 지도 타일 레이어 옵션
+const MAP_TILES = {
+  dark: {
+    name: 'Dark',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  },
+  light: {
+    name: 'Light',
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  },
+  standard: {
+    name: 'Standard',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  },
+  voyager: {
+    name: 'Voyager',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  },
+}
+
+type MapTileType = keyof typeof MAP_TILES
 
 export function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -37,6 +79,8 @@ export function EventDetailPage() {
   } = useNotifications()
 
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false)
+  const [selectedTile, setSelectedTile] = useState<MapTileType>('dark')
+  const [showTileSelector, setShowTileSelector] = useState(false)
 
   const event = events.find((e) => e.id === id)
   const { myCandle, onsiteCount, remoteCount, lightCandle, blowCandle, isLit } = useCandles({
@@ -258,13 +302,32 @@ export function EventDetailPage() {
           </div>
         </div>
 
+        {/* 실시간 방송 */}
+        {event.liveStreamUrl && (
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center space-x-2">
+              <Video className="w-4 h-4" />
+              <span>실시간 방송</span>
+            </h3>
+            <div className="aspect-video rounded-lg overflow-hidden border border-gray-700 bg-black">
+              <iframe
+                src={getYouTubeEmbedUrl(event.liveStreamUrl)}
+                title={`${event.title} 실시간 방송`}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        )}
+
         {/* 장소 지도 */}
         <div className="mb-6">
           <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center space-x-2">
             <MapPin className="w-4 h-4" />
             <span>집회 장소</span>
           </h3>
-          <div className="h-64 rounded-lg overflow-hidden border border-gray-700">
+          <div className="h-64 rounded-lg overflow-hidden border border-gray-700 relative">
             <MapContainer
               center={[event.location.coordinates.lat, event.location.coordinates.lng]}
               zoom={15}
@@ -272,8 +335,9 @@ export function EventDetailPage() {
               scrollWheelZoom={false}
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                key={selectedTile}
+                attribution={MAP_TILES[selectedTile].attribution}
+                url={MAP_TILES[selectedTile].url}
               />
               <Marker position={[event.location.coordinates.lat, event.location.coordinates.lng]}>
                 <Popup>
@@ -287,6 +351,39 @@ export function EventDetailPage() {
                 </Popup>
               </Marker>
             </MapContainer>
+
+            {/* 지도 타일 선택 버튼 */}
+            <div className="absolute top-2 right-2 z-[1000]">
+              <button
+                onClick={() => setShowTileSelector(!showTileSelector)}
+                className="bg-gray-800 hover:bg-gray-700 text-white p-2 rounded shadow-lg transition-colors"
+                aria-label="지도 타일 선택"
+              >
+                <Layers className="w-4 h-4" />
+              </button>
+
+              {/* 타일 선택 메뉴 */}
+              {showTileSelector && (
+                <div className="absolute top-10 right-0 bg-gray-800 rounded-lg shadow-xl p-2 min-w-[120px]">
+                  {(Object.keys(MAP_TILES) as MapTileType[]).map((tileKey) => (
+                    <button
+                      key={tileKey}
+                      onClick={() => {
+                        setSelectedTile(tileKey)
+                        setShowTileSelector(false)
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                        selectedTile === tileKey
+                          ? 'bg-yellow-600 text-white'
+                          : 'text-gray-300 hover:bg-gray-700'
+                      }`}
+                    >
+                      {MAP_TILES[tileKey].name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
