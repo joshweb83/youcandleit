@@ -149,7 +149,7 @@ export function EventDetailPage() {
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false)
   const [selectedTile, setSelectedTile] = useState<MapTileType>('dark')
   const [showTileSelector, setShowTileSelector] = useState(false)
-  const [showLiveChat, setShowLiveChat] = useState(true) // 라이브 채팅 표시 여부
+  const [showLiveChat, setShowLiveChat] = useState(false) // 라이브 채팅 표시 여부 (기본: 숨김)
 
   // 지도 관련 상태
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
