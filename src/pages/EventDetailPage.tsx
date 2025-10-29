@@ -596,7 +596,7 @@ export function EventDetailPage() {
             </MapContainer>
 
             {/* 지도 컨트롤 버튼들 */}
-            <div className="absolute top-2 right-2 z-[1000] flex flex-col space-y-2">
+            <div className="absolute top-2 right-2 z-[50] flex flex-col space-y-2">
               {/* 현재 위치 버튼 */}
               <button
                 onClick={handleGoToCurrentLocation}
@@ -952,14 +952,14 @@ export function EventDetailPage() {
               {/* 닫기 버튼 */}
               <button
                 onClick={() => setIsMapMaximized(false)}
-                className="absolute top-4 right-4 z-[1000] bg-gray-800 hover:bg-gray-700 text-white p-3 rounded-full shadow-lg transition-colors"
+                className="absolute top-4 right-4 z-[50] bg-gray-800 hover:bg-gray-700 text-white p-3 rounded-full shadow-lg transition-colors"
                 aria-label="닫기"
               >
                 <X className="w-6 h-6" />
               </button>
 
               {/* 지도 컨트롤 버튼들 */}
-              <div className="absolute top-4 left-4 z-[1000] flex flex-col space-y-2">
+              <div className="absolute top-4 left-4 z-[50] flex flex-col space-y-2">
                 {/* 현재 위치 버튼 */}
                 <button
                   onClick={handleGoToCurrentLocation}

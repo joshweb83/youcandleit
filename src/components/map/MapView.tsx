@@ -539,7 +539,7 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
       </MapContainer>
 
       {/* 지도 컨트롤 버튼들 */}
-      <div className="absolute top-4 right-4 z-[1000] flex flex-col space-y-2">
+      <div className="absolute top-4 right-4 z-[50] flex flex-col space-y-2">
         {/* 현재 위치 버튼 */}
         <button
           onClick={handleGoToCurrentLocation}
