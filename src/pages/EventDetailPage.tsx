@@ -39,20 +39,40 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c
 }
 
-// YouTube URL을 임베드 URL로 변환
-function getYouTubeEmbedUrl(url: string): string {
+// YouTube URL에서 비디오 ID 추출
+function getYouTubeVideoId(url: string): string | null {
   const match1 = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)
   if (match1) {
-    return `https://www.youtube.com/embed/${match1[1]}`
+    return match1[1]
   }
   const match2 = url.match(/youtube\.com\/live\/([^&\s]+)/)
   if (match2) {
-    return `https://www.youtube.com/embed/${match2[1]}`
+    return match2[1]
   }
-  if (url.includes('youtube.com/embed/')) {
-    return url
+  const match3 = url.match(/youtube\.com\/embed\/([^&\s?]+)/)
+  if (match3) {
+    return match3[1]
+  }
+  return null
+}
+
+// YouTube URL을 임베드 URL로 변환
+function getYouTubeEmbedUrl(url: string): string {
+  const videoId = getYouTubeVideoId(url)
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}`
   }
   return url
+}
+
+// YouTube 라이브 채팅 URL 생성
+function getYouTubeLiveChatUrl(url: string): string | null {
+  const videoId = getYouTubeVideoId(url)
+  if (!videoId) return null
+
+  // embed_domain은 현재 도메인 사용 (CORS 방지)
+  const domain = window.location.hostname
+  return `https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${domain}`
 }
 
 // 지도 타일 레이어 옵션
@@ -462,14 +482,40 @@ export function EventDetailPage() {
               <Video className="w-4 h-4" />
               <span>실시간 방송</span>
             </h3>
-            <div className="aspect-video rounded-lg overflow-hidden border border-gray-700 bg-black">
-              <iframe
-                src={getYouTubeEmbedUrl(event.liveStreamUrl)}
-                title={`${event.title} 실시간 방송`}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* 영상 */}
+              <div className="lg:col-span-2">
+                <div className="aspect-video rounded-lg overflow-hidden border border-gray-700 bg-black">
+                  <iframe
+                    src={getYouTubeEmbedUrl(event.liveStreamUrl)}
+                    title={`${event.title} 실시간 방송`}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+
+              {/* 라이브 채팅 */}
+              <div className="lg:col-span-1">
+                <div className="h-[300px] lg:h-full rounded-lg overflow-hidden border border-gray-700 bg-black">
+                  {getYouTubeLiveChatUrl(event.liveStreamUrl) ? (
+                    <iframe
+                      src={getYouTubeLiveChatUrl(event.liveStreamUrl)!}
+                      title={`${event.title} 라이브 채팅`}
+                      className="w-full h-full"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <p className="text-sm">💬</p>
+                        <p className="text-xs mt-2">라이브 채팅을 불러올 수 없습니다</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
