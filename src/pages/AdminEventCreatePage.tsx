@@ -326,11 +326,8 @@ export function AdminEventCreatePage() {
             </p>
           </div>
 
-          {/* 상세 위치 */}
+          {/* 상세 주소 */}
           <div>
-            <label htmlFor="details" className="block text-sm font-medium mb-2">
-              상세 위치
-            </label>
             <input
               id="details"
               type="text"
@@ -341,61 +338,9 @@ export function AdminEventCreatePage() {
                   location: { ...formData.location, details: e.target.value },
                 })
               }
-              placeholder="예: 서울시청역 5번 출구 앞"
+              placeholder="상세주소 예: 서울시청역 5번 출구 앞"
               className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
             />
-          </div>
-
-          {/* 좌표 */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="lat" className="block text-sm font-medium mb-2">
-                위도
-              </label>
-              <input
-                id="lat"
-                type="number"
-                step="0.0001"
-                value={formData.location.coordinates.lat}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    location: {
-                      ...formData.location,
-                      coordinates: {
-                        ...formData.location.coordinates,
-                        lat: parseFloat(e.target.value),
-                      },
-                    },
-                  })
-                }
-                className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-              />
-            </div>
-            <div>
-              <label htmlFor="lng" className="block text-sm font-medium mb-2">
-                경도
-              </label>
-              <input
-                id="lng"
-                type="number"
-                step="0.0001"
-                value={formData.location.coordinates.lng}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    location: {
-                      ...formData.location,
-                      coordinates: {
-                        ...formData.location.coordinates,
-                        lng: parseFloat(e.target.value),
-                      },
-                    },
-                  })
-                }
-                className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-              />
-            </div>
           </div>
 
           {/* 인증 반경 */}
