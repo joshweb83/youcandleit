@@ -8,13 +8,15 @@ import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker, Circle } from 'react-leaflet'
 import { LatLngExpression } from 'leaflet'
 import { useNavigate } from 'react-router-dom'
-import { Layers } from 'lucide-react'
+import { Layers, Navigation, CloudSun } from 'lucide-react'
 import type { Event } from '@/types/event.types'
 import type { CheckIn } from '@/types/checkin.types'
 import type { Comment } from '@/types/comment.types'
 import { useCandles } from '@/hooks/useCandles'
 import { db } from '@/services/firebase/config'
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore'
+import { WeatherPopup } from '@/components/weather/WeatherPopup'
+import { getWeatherByCoordinates, type WeatherData } from '@/services/weather/api'
 import 'leaflet/dist/leaflet.css'
 
 // Leaflet 아이콘 수정 (Vite에서 기본 아이콘이 깨지는 문제 해결)
@@ -30,6 +32,18 @@ let DefaultIcon = L.icon({
 })
 
 L.Marker.prototype.options.icon = DefaultIcon
+
+// 사용자 위치 마커를 위한 커스텀 아이콘
+const userLocationIcon = new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10" fill="#3b82f6" fill-opacity="0.2"/>
+      <circle cx="12" cy="12" r="4" fill="#3b82f6"/>
+    </svg>
+  `),
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+})
 
 // 촛불 아이콘 색상 설정
 const CANDLE_COLORS = {
@@ -76,6 +90,19 @@ function ChangeView({ center, zoom }: { center: LatLngExpression; zoom: number }
   return null
 }
 
+// 지도 중심 이동을 위한 헬퍼 컴포넌트
+function MapCenterController({ center }: { center: [number, number] | null }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (center) {
+      map.setView(center, 15, { animate: true })
+    }
+  }, [center, map])
+
+  return null
+}
+
 export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapViewProps) {
   const navigate = useNavigate()
   const { candles } = useCandles()
@@ -83,6 +110,14 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
   const [showTileSelector, setShowTileSelector] = useState(false)
   const [checkIns, setCheckIns] = useState<CheckIn[]>([])
   const [comments, setComments] = useState<Comment[]>([])
+
+  // 지도 관련 상태
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [showWeatherPopup, setShowWeatherPopup] = useState(false)
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
+  const [weatherLoading, setWeatherLoading] = useState(false)
+  const [weatherError, setWeatherError] = useState<string | null>(null)
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null)
 
   // 모든 이벤트의 댓글 데이터를 실시간으로 가져오기 (위치 정보가 있는 것만)
   useEffect(() => {
@@ -183,6 +218,79 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
   const candlesWithLocation = candles.filter(
     (candle) => candle.location && candle.location.lat && candle.location.lng
   )
+
+  // 현재 위치로 지도 이동
+  const handleGoToCurrentLocation = () => {
+    if (!('geolocation' in navigator)) {
+      alert('이 브라우저는 위치 서비스를 지원하지 않습니다.')
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude
+        const lng = position.coords.longitude
+        setUserLocation({ lat, lng })
+        setMapCenter([lat, lng])
+      },
+      (error) => {
+        console.error('위치 가져오기 실패:', error)
+        let errorMessage = '위치 정보를 가져올 수 없습니다.'
+        if (error.code === error.PERMISSION_DENIED) {
+          errorMessage = '위치 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해주세요.'
+        }
+        alert(errorMessage)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    )
+  }
+
+  // 날씨 정보 가져오기
+  const handleShowWeather = async () => {
+    if (!('geolocation' in navigator)) {
+      alert('이 브라우저는 위치 서비스를 지원하지 않습니다.')
+      return
+    }
+
+    setShowWeatherPopup(true)
+    setWeatherLoading(true)
+    setWeatherError(null)
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude
+        const lng = position.coords.longitude
+
+        try {
+          const weather = await getWeatherByCoordinates(lat, lng)
+          setWeatherData(weather)
+          setWeatherLoading(false)
+        } catch (error) {
+          console.error('날씨 정보 가져오기 실패:', error)
+          setWeatherError('날씨 정보를 가져오는데 실패했습니다. 다시 시도해주세요.')
+          setWeatherLoading(false)
+        }
+      },
+      (error) => {
+        console.error('위치 가져오기 실패:', error)
+        let errorMessage = '위치 정보를 가져올 수 없습니다.'
+        if (error.code === error.PERMISSION_DENIED) {
+          errorMessage = '위치 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해주세요.'
+        }
+        setWeatherError(errorMessage)
+        setWeatherLoading(false)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000, // 5분간 캐시
+      }
+    )
+  }
 
   const currentTile = MAP_TILES[selectedTile]
 
@@ -411,21 +519,60 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
             </Popup>
           </CircleMarker>
         ))}
+
+        {/* 사용자 위치 마커 */}
+        {userLocation && (
+          <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
+            <Popup>
+              <div className="text-sm">
+                <div className="font-bold mb-1">내 위치</div>
+                <div className="text-gray-600 text-xs">
+                  {userLocation.lat.toFixed(6)}, {userLocation.lng.toFixed(6)}
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        )}
+
+        {/* 지도 중심 컨트롤러 */}
+        <MapCenterController center={mapCenter} />
       </MapContainer>
 
-      {/* 지도 타일 선택 버튼 */}
-      <div className="absolute top-4 right-4 z-[1000]">
+      {/* 지도 컨트롤 버튼들 */}
+      <div className="absolute top-4 right-4 z-[1000] flex flex-col space-y-2">
+        {/* 현재 위치 버튼 */}
+        <button
+          onClick={handleGoToCurrentLocation}
+          className="bg-gray-800 hover:bg-gray-700 text-white p-3 rounded-lg shadow-lg transition-colors"
+          aria-label="현재 위치 보기"
+          title="현재 위치 보기"
+        >
+          <Navigation className="w-5 h-5" />
+        </button>
+
+        {/* 날씨 보기 버튼 */}
+        <button
+          onClick={handleShowWeather}
+          className="bg-gray-800 hover:bg-gray-700 text-white p-3 rounded-lg shadow-lg transition-colors"
+          aria-label="날씨 보기"
+          title="날씨 보기"
+        >
+          <CloudSun className="w-5 h-5" />
+        </button>
+
+        {/* 지도 타일 선택 버튼 */}
         <button
           onClick={() => setShowTileSelector(!showTileSelector)}
           className="bg-gray-800 hover:bg-gray-700 text-white p-3 rounded-lg shadow-lg transition-colors"
           aria-label="지도 타일 선택"
+          title="지도 스타일 변경"
         >
           <Layers className="w-5 h-5" />
         </button>
 
         {/* 타일 선택 메뉴 */}
         {showTileSelector && (
-          <div className="absolute top-14 right-0 bg-gray-800 rounded-lg shadow-xl p-2 min-w-[150px]">
+          <div className="bg-gray-800 rounded-lg shadow-xl p-2 min-w-[150px] mt-2">
             {(Object.keys(MAP_TILES) as MapTileType[]).map((tileKey) => (
               <button
                 key={tileKey}
@@ -445,6 +592,15 @@ export function MapView({ events, center = [37.5665, 126.978], zoom = 13 }: MapV
           </div>
         )}
       </div>
+
+      {/* 날씨 팝업 */}
+      <WeatherPopup
+        isOpen={showWeatherPopup}
+        onClose={() => setShowWeatherPopup(false)}
+        weather={weatherData}
+        loading={weatherLoading}
+        error={weatherError}
+      />
     </div>
   )
 }
