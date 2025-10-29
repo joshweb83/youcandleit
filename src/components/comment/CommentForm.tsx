@@ -3,10 +3,11 @@
  *
  * 사용자가 집회에 응원 메시지를 작성할 수 있습니다.
  * AI 생성 메시지 옵션도 제공합니다.
+ * 로그인 없이도 익명으로 작성 가능합니다.
  */
 
 import { useState } from 'react'
-import { Send, Sparkles, MapPin } from 'lucide-react'
+import { Send, Sparkles, MapPin, User } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { createComment } from '@/services/firebase/firestore'
 import { generateSupportMessage } from '@/services/gemini/api'
@@ -17,28 +18,46 @@ interface CommentFormProps {
   onCommentCreated?: () => void
 }
 
+// 익명 사용자를 위한 임시 ID 생성
+function generateAnonymousId(): string {
+  return `anon-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+}
+
 export function CommentForm({ eventId, eventTitle, onCommentCreated }: CommentFormProps) {
   const { user, isAuthenticated } = useAuth()
   const [content, setContent] = useState('')
+  const [anonymousName, setAnonymousName] = useState('')
   const [isRemote, setIsRemote] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isAuthenticated || !user || !content.trim()) return
+    if (!content.trim()) return
+
+    // 익명 사용자의 경우 이름이 비어있으면 기본값 사용
+    const userName = isAuthenticated
+      ? user?.displayName || '사용자'
+      : (anonymousName.trim() || '익명')
+
+    const userId = isAuthenticated
+      ? user!.uid
+      : generateAnonymousId()
 
     setIsSubmitting(true)
     try {
       await createComment({
         eventId,
-        userId: user.uid,
-        userName: user.displayName,
+        userId,
+        userName,
         content: content.trim(),
         isRemote,
         isAIGenerated: false,
       })
       setContent('')
+      if (!isAuthenticated) {
+        setAnonymousName('') // 익명 이름도 초기화
+      }
       setIsRemote(false)
       onCommentCreated?.()
     } catch (error) {
@@ -50,8 +69,6 @@ export function CommentForm({ eventId, eventTitle, onCommentCreated }: CommentFo
   }
 
   const handleGenerateAI = async () => {
-    if (!isAuthenticated || !user) return
-
     setIsGenerating(true)
     try {
       const aiMessage = await generateSupportMessage(eventTitle)
@@ -64,17 +81,29 @@ export function CommentForm({ eventId, eventTitle, onCommentCreated }: CommentFo
     }
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="bg-gray-800 rounded-lg p-6 text-center">
-        <p className="text-gray-400">로그인 후 댓글을 작성할 수 있습니다</p>
-      </div>
-    )
-  }
-
   return (
     <div className="bg-gray-800 rounded-lg p-6">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* 익명 사용자 이름 입력 */}
+        {!isAuthenticated && (
+          <div>
+            <label htmlFor="anonymousName" className="block text-sm font-medium text-gray-300 mb-2 flex items-center space-x-2">
+              <User className="w-4 h-4" />
+              <span>닉네임 (선택)</span>
+            </label>
+            <input
+              id="anonymousName"
+              type="text"
+              value={anonymousName}
+              onChange={(e) => setAnonymousName(e.target.value)}
+              placeholder="비워두면 '익명'으로 표시됩니다"
+              maxLength={20}
+              className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-500"
+              disabled={isSubmitting || isGenerating}
+            />
+          </div>
+        )}
+
         {/* 댓글 입력 */}
         <div>
           <label htmlFor="comment" className="block text-sm font-medium text-gray-300 mb-2">
@@ -130,6 +159,15 @@ export function CommentForm({ eventId, eventTitle, onCommentCreated }: CommentFo
           <span>{isSubmitting ? '전송 중...' : '댓글 작성'}</span>
         </button>
       </form>
+
+      {/* 안내 메시지 */}
+      {!isAuthenticated && (
+        <div className="mt-4 p-3 bg-gray-900 rounded-lg border border-gray-700">
+          <p className="text-xs text-gray-400">
+            💡 익명으로 댓글을 작성하고 있습니다. 로그인하면 더 많은 기능을 이용할 수 있습니다.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
