@@ -22,7 +22,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <span className="text-2xl">🕯️</span>
-            <h1 className="text-2xl" style={{ fontFamily: 'Pacifico, cursive' }}>YouCandleIt</h1>
+            <h1 className="text-2xl" style={{ fontFamily: 'Pacifico, cursive' }}>Youcandleit</h1>
           </div>
           {/* 추후: 알림, 언어 선택, 프로필 추가 */}
         </div>
