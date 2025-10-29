@@ -87,7 +87,7 @@ export function EventDetailPage() {
   const { t } = useTranslation()
   const { user, isAuthenticated } = useAuth()
   const { events, loading: eventsLoading } = useEvents()
-  const { comments, loading: commentsLoading, refetch: refetchComments } = useComments(id)
+  const { comments, loading: commentsLoading } = useComments(id)
   const { isFavorite, toggleFavorite } = useFavorites()
   const {
     hasPermission,
@@ -633,7 +633,6 @@ export function EventDetailPage() {
         <CommentForm
           eventId={event.id}
           eventTitle={event.title}
-          onCommentCreated={refetchComments}
         />
 
         {/* 댓글 목록 */}

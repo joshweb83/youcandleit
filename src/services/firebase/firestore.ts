@@ -152,7 +152,7 @@ export async function fetchComments(eventId?: string): Promise<Comment[]> {
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt.toDate(),
+        createdAt: data.createdAt.toMillis(),
       } as Comment
     })
   } catch (error) {
