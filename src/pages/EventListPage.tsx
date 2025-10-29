@@ -110,7 +110,7 @@ export function EventListPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 pb-24">
+    <div className="max-w-4xl mx-auto px-4 py-6">
       {/* 헤더 */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -229,7 +229,7 @@ export function EventListPage() {
       {/* Floating Action Button - 새 집회 생성 */}
       <button
           onClick={() => navigate('/admin/events/create')}
-          className="fixed bottom-20 right-6 md:right-8 lg:right-12 w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-full shadow-2xl hover:shadow-yellow-500/50 transition-all duration-300 flex items-center justify-center group z-50"
+          className="fixed bottom-20 md:bottom-6 right-6 md:right-8 lg:right-12 w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-full shadow-2xl hover:shadow-yellow-500/50 transition-all duration-300 flex items-center justify-center group z-50"
           aria-label="새 집회 생성"
         >
           <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />

@@ -46,7 +46,7 @@ export function Navbar() {
       </nav>
 
       {/* 데스크탑 네비게이션 (좌측) */}
-      <nav className="hidden md:block w-64 bg-gray-800 border-r border-gray-700 min-h-screen sticky top-16">
+      <nav className="hidden md:block w-64 bg-gray-800 border-r border-gray-700 h-full overflow-y-auto">
         <div className="p-4 space-y-2">
           {navItems.map(({ path, icon: Icon, labelKey }) => (
             <NavLink

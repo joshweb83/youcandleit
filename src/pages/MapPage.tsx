@@ -15,7 +15,7 @@ export function MapPage() {
 
   if (loading) {
     return (
-      <div className="h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <div className="text-4xl mb-2">🕯️</div>
           <p className="text-gray-400">{t('common.loading')}</p>
@@ -27,8 +27,8 @@ export function MapPage() {
   // Firebase 설정 오류 처리
   if (error) {
     return (
-      <div className="h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-900">
-        <div className="max-w-2xl mx-auto px-6 py-8 bg-gray-800 rounded-lg border-2 border-yellow-500">
+      <div className="h-full flex items-center justify-center bg-gray-900 overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-6 py-8 bg-gray-800 rounded-lg border-2 border-yellow-500 m-4">
           <div className="flex items-start space-x-4">
             <AlertCircle className="w-8 h-8 text-yellow-500 flex-shrink-0 mt-1" />
             <div>
@@ -81,7 +81,7 @@ export function MapPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)]">
+    <div className="h-full">
       {events.length > 0 ? (
         <MapView events={events} />
       ) : (
