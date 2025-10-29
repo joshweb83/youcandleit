@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Calendar, MapPin, ArrowLeft, Sparkles, Flame, Heart, Bell, BellOff, Layers, Video, MapPinCheck, MessageSquare, ChevronDown, ChevronUp, Navigation, CloudSun } from 'lucide-react'
+import { Calendar, MapPin, ArrowLeft, Sparkles, Flame, Heart, Bell, BellOff, Layers, Video, MapPinCheck, MessageSquare, ChevronDown, ChevronUp, Navigation, CloudSun, Maximize2, X } from 'lucide-react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { useEvents } from '@/hooks/useEvents'
@@ -161,6 +161,9 @@ export function EventDetailPage() {
 
   // 설명 펼치기/접기 상태
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
+
+  // 지도 최대화 상태
+  const [isMapMaximized, setIsMapMaximized] = useState(false)
 
   // 현장 인증 관련 상태
   const [isCheckedIn, setIsCheckedIn] = useState(false)
@@ -550,10 +553,6 @@ export function EventDetailPage() {
 
         {/* 장소 지도 */}
         <div className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center space-x-2">
-            <MapPin className="w-4 h-4" />
-            <span>집회 장소</span>
-          </h3>
           <div className="h-32 rounded-lg overflow-hidden border border-gray-700 relative">
             <MapContainer
               center={[event.location.coordinates.lat, event.location.coordinates.lng]}
@@ -628,9 +627,19 @@ export function EventDetailPage() {
                 <Layers className="w-4 h-4" />
               </button>
 
+              {/* 지도 최대화 버튼 */}
+              <button
+                onClick={() => setIsMapMaximized(true)}
+                className="bg-gray-800 hover:bg-gray-700 text-white p-2 rounded shadow-lg transition-colors"
+                aria-label="지도 최대화"
+                title="지도 최대화"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+
               {/* 타일 선택 메뉴 */}
               {showTileSelector && (
-                <div className="absolute top-[120px] right-0 bg-gray-800 rounded-lg shadow-xl p-2 min-w-[120px]">
+                <div className="absolute top-[160px] right-0 bg-gray-800 rounded-lg shadow-xl p-2 min-w-[120px]">
                   {(Object.keys(MAP_TILES) as MapTileType[]).map((tileKey) => (
                     <button
                       key={tileKey}
@@ -886,6 +895,127 @@ export function EventDetailPage() {
         loading={weatherLoading}
         error={weatherError}
       />
+
+      {/* 지도 최대화 모달 */}
+      {isMapMaximized && (
+        <>
+          {/* 오버레이 */}
+          <div
+            className="fixed inset-0 bg-black/90 z-50"
+            onClick={() => setIsMapMaximized(false)}
+          />
+
+          {/* 전체화면 지도 */}
+          <div className="fixed inset-0 z-50 p-4 pointer-events-none">
+            <div className="w-full h-full pointer-events-auto relative rounded-lg overflow-hidden">
+              <MapContainer
+                center={[event.location.coordinates.lat, event.location.coordinates.lng]}
+                zoom={15}
+                style={{ height: '100%', width: '100%' }}
+                scrollWheelZoom={true}
+              >
+                <TileLayer
+                  key={selectedTile}
+                  attribution={MAP_TILES[selectedTile].attribution}
+                  url={MAP_TILES[selectedTile].url}
+                />
+                <Marker position={[event.location.coordinates.lat, event.location.coordinates.lng]}>
+                  <Popup>
+                    <div className="text-sm">
+                      <div className="font-bold mb-1">{event.title}</div>
+                      <div className="text-gray-600">{event.location.address}</div>
+                      {event.location.details && (
+                        <div className="text-gray-500 text-xs mt-1">{event.location.details}</div>
+                      )}
+                    </div>
+                  </Popup>
+                </Marker>
+
+                {/* 사용자 위치 마커 */}
+                {userLocation && (
+                  <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
+                    <Popup>
+                      <div className="text-sm">
+                        <div className="font-bold mb-1">내 위치</div>
+                        <div className="text-gray-600 text-xs">
+                          {userLocation.lat.toFixed(6)}, {userLocation.lng.toFixed(6)}
+                        </div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+
+                {/* 지도 중심 컨트롤러 */}
+                <MapCenterController center={mapCenter} />
+              </MapContainer>
+
+              {/* 닫기 버튼 */}
+              <button
+                onClick={() => setIsMapMaximized(false)}
+                className="absolute top-4 right-4 z-[1000] bg-gray-800 hover:bg-gray-700 text-white p-3 rounded-full shadow-lg transition-colors"
+                aria-label="닫기"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              {/* 지도 컨트롤 버튼들 */}
+              <div className="absolute top-4 left-4 z-[1000] flex flex-col space-y-2">
+                {/* 현재 위치 버튼 */}
+                <button
+                  onClick={handleGoToCurrentLocation}
+                  className="bg-gray-800 hover:bg-gray-700 text-white p-2 rounded shadow-lg transition-colors"
+                  aria-label="현재 위치 보기"
+                  title="현재 위치 보기"
+                >
+                  <Navigation className="w-4 h-4" />
+                </button>
+
+                {/* 날씨 보기 버튼 */}
+                <button
+                  onClick={handleShowWeather}
+                  className="bg-gray-800 hover:bg-gray-700 text-white p-2 rounded shadow-lg transition-colors"
+                  aria-label="날씨 보기"
+                  title="날씨 보기"
+                >
+                  <CloudSun className="w-4 h-4" />
+                </button>
+
+                {/* 지도 타일 선택 버튼 */}
+                <button
+                  onClick={() => setShowTileSelector(!showTileSelector)}
+                  className="bg-gray-800 hover:bg-gray-700 text-white p-2 rounded shadow-lg transition-colors"
+                  aria-label="지도 타일 선택"
+                  title="지도 스타일 변경"
+                >
+                  <Layers className="w-4 h-4" />
+                </button>
+
+                {/* 타일 선택 메뉴 */}
+                {showTileSelector && (
+                  <div className="bg-gray-800 rounded-lg shadow-xl p-2 min-w-[120px] mt-2">
+                    {(Object.keys(MAP_TILES) as MapTileType[]).map((tileKey) => (
+                      <button
+                        key={tileKey}
+                        onClick={() => {
+                          setSelectedTile(tileKey)
+                          setShowTileSelector(false)
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                          selectedTile === tileKey
+                            ? 'bg-yellow-600 text-white'
+                            : 'text-gray-300 hover:bg-gray-700'
+                        }`}
+                      >
+                        {MAP_TILES[tileKey].name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
