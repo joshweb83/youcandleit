@@ -10,7 +10,7 @@ export interface WeatherData {
   temp: number // 현재 온도 (섭씨)
   feels_like: number // 체감 온도 (섭씨)
   humidity: number // 습도 (%)
-  pressure: number // 기압 (hPa)
+  precipitation_probability: number // 강수확률 (%)
   weather: {
     main: string // 날씨 주요 설명 (Clear, Clouds, Rain 등)
     description: string // 날씨 상세 설명
@@ -22,7 +22,7 @@ export interface WeatherData {
   }
   clouds: number // 구름양 (%)
   visibility: number // 가시거리 (m)
-  name: string // 지역명
+  name: string // 지역명 (상세)
   country: string // 국가 코드
 }
 
@@ -61,6 +61,52 @@ function getWeatherDescription(code: number): { main: string; description: strin
 }
 
 /**
+ * 역지오코딩 - 좌표를 주소로 변환 (Nominatim API 사용 - API 키 불필요)
+ */
+async function reverseGeocode(lat: number, lng: number): Promise<{ city: string; country: string }> {
+  try {
+    const url = new URL('https://nominatim.openstreetmap.org/reverse')
+    url.searchParams.append('lat', lat.toString())
+    url.searchParams.append('lon', lng.toString())
+    url.searchParams.append('format', 'json')
+    url.searchParams.append('accept-language', 'ko')
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        'User-Agent': 'YouCandleIt-Weather-App'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const address = data.address
+
+    // 한국 주소 형식: 시/도 > 시/군/구
+    let city = '현재 위치'
+    if (address.city) {
+      city = address.city
+    } else if (address.town) {
+      city = address.town
+    } else if (address.county) {
+      city = address.county
+    } else if (address.province || address.state) {
+      city = address.province || address.state
+    }
+
+    return {
+      city,
+      country: address.country_code?.toUpperCase() || 'KR'
+    }
+  } catch (error) {
+    console.error('역지오코딩 실패:', error)
+    return { city: '현재 위치', country: 'KR' }
+  }
+}
+
+/**
  * 좌표로 날씨 정보 가져오기 (Open-Meteo API 사용 - API 키 불필요)
  */
 export async function getWeatherByCoordinates(
@@ -68,21 +114,24 @@ export async function getWeatherByCoordinates(
   lng: number
 ): Promise<WeatherData> {
   try {
-    // Open-Meteo API는 API 키가 필요 없습니다
-    const url = new URL('https://api.open-meteo.com/v1/forecast')
-    url.searchParams.append('latitude', lat.toString())
-    url.searchParams.append('longitude', lng.toString())
-    url.searchParams.append('current', 'temperature_2m,relative_humidity_2m,apparent_temperature,pressure_msl,cloud_cover,wind_speed_10m,wind_direction_10m,weather_code')
-    url.searchParams.append('timezone', 'Asia/Seoul')
+    // 역지오코딩과 날씨 정보를 병렬로 가져오기
+    const [locationData, weatherResponse] = await Promise.all([
+      reverseGeocode(lat, lng),
+      fetch(
+        `https://api.open-meteo.com/v1/forecast?` +
+        `latitude=${lat}&longitude=${lng}&` +
+        `current=temperature_2m,relative_humidity_2m,apparent_temperature,cloud_cover,wind_speed_10m,wind_direction_10m,weather_code,precipitation_probability&` +
+        `hourly=precipitation_probability&` +
+        `timezone=Asia/Seoul`
+      )
+    ])
 
-    const response = await fetch(url.toString())
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+    if (!weatherResponse.ok) {
+      throw new Error(`HTTP error! status: ${weatherResponse.status}`)
     }
 
-    const data = await response.json()
-    const current = data.current
+    const weatherData = await weatherResponse.json()
+    const current = weatherData.current
 
     const weatherInfo = getWeatherDescription(current.weather_code)
 
@@ -90,7 +139,7 @@ export async function getWeatherByCoordinates(
       temp: Math.round(current.temperature_2m),
       feels_like: Math.round(current.apparent_temperature),
       humidity: current.relative_humidity_2m,
-      pressure: Math.round(current.pressure_msl),
+      precipitation_probability: current.precipitation_probability || 0,
       weather: weatherInfo,
       wind: {
         speed: current.wind_speed_10m / 3.6, // km/h를 m/s로 변환
@@ -98,8 +147,8 @@ export async function getWeatherByCoordinates(
       },
       clouds: current.cloud_cover,
       visibility: 10000, // Open-Meteo는 가시거리를 제공하지 않으므로 기본값
-      name: '현재 위치',
-      country: 'KR',
+      name: locationData.city,
+      country: locationData.country,
     }
   } catch (error) {
     console.error('날씨 정보 가져오기 실패:', error)
@@ -133,4 +182,27 @@ export function getWindDirection(deg: number): string {
   const directions = ['북', '북동', '동', '남동', '남', '남서', '서', '북서']
   const index = Math.round(deg / 45) % 8
   return directions[index]
+}
+
+/**
+ * 체감온도에 따른 옷차림 팁
+ */
+export function getClothingTip(feelsLike: number): string {
+  if (feelsLike >= 28) {
+    return '민소매, 반팔, 반바지, 원피스'
+  } else if (feelsLike >= 23) {
+    return '반팔, 얇은 셔츠, 반바지, 면바지'
+  } else if (feelsLike >= 20) {
+    return '긴팔, 가디건, 청바지, 면바지'
+  } else if (feelsLike >= 17) {
+    return '얇은 니트, 맨투맨, 가디건, 청바지'
+  } else if (feelsLike >= 12) {
+    return '자켓, 가디건, 야상, 청바지'
+  } else if (feelsLike >= 9) {
+    return '트렌치 코트, 야상, 점퍼, 니트'
+  } else if (feelsLike >= 5) {
+    return '코트, 가죽자켓, 히트텍, 니트'
+  } else {
+    return '패딩, 두꺼운 코트, 목도리, 기모제품'
+  }
 }

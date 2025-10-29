@@ -4,8 +4,8 @@
  * 현재 위치의 날씨 정보를 모달 형태로 표시합니다.
  */
 
-import { X, Wind, Droplets, Eye, Gauge } from 'lucide-react'
-import { WeatherData, getWeatherIconUrl, getWindDirection } from '@/services/weather/api'
+import { X, Wind, Droplets, Eye, CloudRain, Shirt } from 'lucide-react'
+import { WeatherData, getWeatherIconUrl, getWindDirection, getClothingTip } from '@/services/weather/api'
 
 interface WeatherPopupProps {
   isOpen: boolean
@@ -64,7 +64,7 @@ export function WeatherPopup({ isOpen, onClose, weather, loading, error }: Weath
                 {/* 위치 */}
                 <div className="text-center">
                   <p className="text-gray-400 text-sm">
-                    {weather.name}, {weather.country}
+                    {weather.name}
                   </p>
                 </div>
 
@@ -79,13 +79,44 @@ export function WeatherPopup({ isOpen, onClose, weather, loading, error }: Weath
                   <div className="text-lg text-gray-300 mb-1">
                     {weather.weather.description}
                   </div>
-                  <div className="text-sm text-gray-400">
+                  <div className="text-sm text-gray-400 mb-1">
                     체감 온도: {weather.feels_like}°C
+                  </div>
+                  {/* 옷차림 팁 */}
+                  <div className="mt-3 px-4 py-2 bg-gray-900 rounded-lg">
+                    <div className="flex items-center justify-center space-x-2 mb-1">
+                      <Shirt className="w-4 h-4 text-blue-400" />
+                      <span className="text-xs text-gray-400">추천 옷차림</span>
+                    </div>
+                    <p className="text-xs text-gray-300 text-center">
+                      {getClothingTip(weather.feels_like)}
+                    </p>
                   </div>
                 </div>
 
                 {/* 상세 정보 */}
                 <div className="grid grid-cols-2 gap-4">
+                  {/* 강수확률 */}
+                  <div className="bg-gray-900 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 text-gray-400 mb-2">
+                      <CloudRain className="w-4 h-4" />
+                      <span className="text-sm">강수확률</span>
+                    </div>
+                    <div className="text-xl font-bold">{weather.precipitation_probability}%</div>
+                  </div>
+
+                  {/* 풍속 */}
+                  <div className="bg-gray-900 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 text-gray-400 mb-2">
+                      <Wind className="w-4 h-4" />
+                      <span className="text-sm">바람</span>
+                    </div>
+                    <div className="text-xl font-bold">{weather.wind.speed.toFixed(1)}m/s</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {getWindDirection(weather.wind.deg)}풍
+                    </div>
+                  </div>
+
                   {/* 습도 */}
                   <div className="bg-gray-900 rounded-lg p-4">
                     <div className="flex items-center space-x-2 text-gray-400 mb-2">
@@ -95,18 +126,6 @@ export function WeatherPopup({ isOpen, onClose, weather, loading, error }: Weath
                     <div className="text-xl font-bold">{weather.humidity}%</div>
                   </div>
 
-                  {/* 풍속 */}
-                  <div className="bg-gray-900 rounded-lg p-4">
-                    <div className="flex items-center space-x-2 text-gray-400 mb-2">
-                      <Wind className="w-4 h-4" />
-                      <span className="text-sm">바람</span>
-                    </div>
-                    <div className="text-xl font-bold">{weather.wind.speed}m/s</div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      {getWindDirection(weather.wind.deg)}풍
-                    </div>
-                  </div>
-
                   {/* 가시거리 */}
                   <div className="bg-gray-900 rounded-lg p-4">
                     <div className="flex items-center space-x-2 text-gray-400 mb-2">
@@ -114,15 +133,6 @@ export function WeatherPopup({ isOpen, onClose, weather, loading, error }: Weath
                       <span className="text-sm">가시거리</span>
                     </div>
                     <div className="text-xl font-bold">{(weather.visibility / 1000).toFixed(1)}km</div>
-                  </div>
-
-                  {/* 기압 */}
-                  <div className="bg-gray-900 rounded-lg p-4">
-                    <div className="flex items-center space-x-2 text-gray-400 mb-2">
-                      <Gauge className="w-4 h-4" />
-                      <span className="text-sm">기압</span>
-                    </div>
-                    <div className="text-xl font-bold">{weather.pressure}hPa</div>
                   </div>
                 </div>
 
