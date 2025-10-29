@@ -9,6 +9,7 @@ import { initializeApp, getApps, FirebaseApp } from 'firebase/app'
 import { getAuth, Auth } from 'firebase/auth'
 import { getFirestore, Firestore } from 'firebase/firestore'
 import { getDatabase, Database } from 'firebase/database'
+import { getStorage, FirebaseStorage } from 'firebase/storage'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -38,6 +39,7 @@ let app: FirebaseApp | null = null
 let auth: Auth | null = null
 let db: Firestore | null = null
 let rtdb: Database | null = null
+let storage: FirebaseStorage | null = null
 
 try {
   const isValid = validateFirebaseConfig()
@@ -56,6 +58,7 @@ try {
     auth = getAuth(app)
     db = getFirestore(app)
     rtdb = getDatabase(app)
+    storage = getStorage(app)
   } else {
     console.warn('⚠️ Firebase가 초기화되지 않았습니다. .env 파일을 확인하세요.')
   }
@@ -64,7 +67,7 @@ try {
 }
 
 // 안전한 내보내기 (null 가능)
-export { app, auth, db, rtdb }
+export { app, auth, db, rtdb, storage }
 
 // Firebase 사용 가능 여부 확인 함수
 export function isFirebaseAvailable(): boolean {

@@ -6,9 +6,10 @@
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Save, ArrowLeft, Calendar, MapPin, Video, Search } from 'lucide-react'
+import { Save, ArrowLeft, Calendar, MapPin, Video, Search, Upload, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { createEvent } from '@/services/firebase/firestore'
+import { uploadPosterImage } from '@/services/firebase/storage'
 import { IconSelector } from '@/components/event/IconSelector'
 import { AddressSearchModal } from '@/components/address/AddressSearchModal'
 import { getCoordinatesFromAddress } from '@/services/juso/api'
@@ -20,6 +21,8 @@ export function AdminEventCreatePage() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [isAddressSearchOpen, setIsAddressSearchOpen] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [previewImage, setPreviewImage] = useState<string>('')
   const [formData, setFormData] = useState<EventInput>({
     title: '',
     description: '',
