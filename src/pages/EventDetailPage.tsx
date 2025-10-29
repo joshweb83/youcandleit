@@ -162,7 +162,7 @@ export function EventDetailPage() {
           const maxDistance = event.location.radius ? event.location.radius / 1000 : 0.5 // km 단위
           if (distance > maxDistance) {
             setCheckInError(
-              `현장에서 ${Math.round(maxDistance * 1000)}m 이내에 있어야 인증할 수 있습니다. (현재 거리: ${Math.round(distance * 1000)}m)`
+              `현장에서 ${maxDistance.toFixed(1)}km 이내에 있어야 인증할 수 있습니다. (현재 거리: ${distance.toFixed(2)}km)`
             )
             setIsCheckingIn(false)
             return
