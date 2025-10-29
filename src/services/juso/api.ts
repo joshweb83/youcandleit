@@ -97,22 +97,44 @@ export async function searchAddress(
 /**
  * 주소를 좌표로 변환
  *
- * 도로명주소 API는 좌표를 제공하지 않으므로,
- * 카카오 맵 API나 Google Geocoding API를 사용해야 합니다.
- * 여기서는 기본적으로 서울시청 좌표를 반환합니다.
+ * OpenStreetMap의 Nominatim API를 사용하여 주소를 좌표로 변환합니다.
+ * 전세계 모든 주소를 지원하며, API 키가 필요하지 않습니다.
  */
-export async function getCoordinatesFromAddress(_address: string): Promise<{
+export async function getCoordinatesFromAddress(address: string): Promise<{
   lat: number
   lng: number
 } | null> {
-  // TODO: 실제로는 카카오 맵 API나 Google Geocoding API를 사용
-  // 지금은 브라우저의 Geocoding API를 사용할 수 없으므로
-  // 기본 좌표를 반환합니다
-  console.warn('좌표 변환 기능은 별도의 API가 필요합니다.')
+  try {
+    const url = new URL('https://nominatim.openstreetmap.org/search')
+    url.searchParams.append('q', address)
+    url.searchParams.append('format', 'json')
+    url.searchParams.append('limit', '1')
+    url.searchParams.append('accept-language', 'ko')
 
-  // 임시로 서울시청 좌표 반환
-  return {
-    lat: 37.5665,
-    lng: 126.9780,
+    const response = await fetch(url.toString(), {
+      headers: {
+        'User-Agent': 'YouCandleIt-Address-Service',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    if (data && data.length > 0) {
+      const { lat, lon } = data[0]
+      return {
+        lat: parseFloat(lat),
+        lng: parseFloat(lon),
+      }
+    }
+
+    console.warn('주소에 대한 좌표를 찾을 수 없습니다:', address)
+    return null
+  } catch (error) {
+    console.error('주소 좌표 변환 실패:', error)
+    return null
   }
 }

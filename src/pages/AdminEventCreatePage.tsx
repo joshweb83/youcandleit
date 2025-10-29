@@ -98,7 +98,7 @@ export function AdminEventCreatePage() {
   }
 
   const handleSelectAddress = async (address: JusoAddress) => {
-    // 좌표 변환 시도 (실제로는 카카오 맵 API 등을 사용해야 함)
+    // 좌표 변환 (Nominatim API 사용)
     const coordinates = await getCoordinatesFromAddress(address.roadAddr)
 
     setFormData({
@@ -109,6 +109,49 @@ export function AdminEventCreatePage() {
         coordinates: coordinates || formData.location.coordinates,
       },
     })
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // 파일 타입 검증
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드할 수 있습니다.')
+      return
+    }
+
+    // 파일 크기 검증 (10MB)
+    const maxSize = 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      alert('파일 크기는 10MB를 초과할 수 없습니다.')
+      return
+    }
+
+    setUploadingImage(true)
+    try {
+      // 로컬 미리보기 생성
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPreviewImage(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+
+      // Firebase Storage에 업로드
+      const imageUrl = await uploadPosterImage(file)
+      setFormData({ ...formData, posterImage: imageUrl })
+    } catch (error) {
+      console.error('이미지 업로드 실패:', error)
+      alert('이미지 업로드에 실패했습니다.')
+      setPreviewImage('')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setFormData({ ...formData, posterImage: '' })
+    setPreviewImage('')
   }
 
   return (
@@ -200,36 +243,56 @@ export function AdminEventCreatePage() {
             />
           </div>
 
-          {/* 포스터 이미지 URL */}
+          {/* 포스터 이미지 업로드 */}
           <div>
             <label htmlFor="posterImage" className="block text-sm font-medium mb-2">
-              포스터 이미지 URL
+              포스터 이미지
             </label>
-            <input
-              id="posterImage"
-              type="url"
-              value={formData.posterImage}
-              onChange={(e) => setFormData({ ...formData, posterImage: e.target.value })}
-              placeholder="https://example.com/poster.jpg"
-              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              포스터 이미지 URL을 입력하세요. 집회 상세 페이지에 표시됩니다.
-            </p>
-            {formData.posterImage && (
-              <div className="mt-3">
-                <p className="text-xs text-gray-400 mb-2">미리보기:</p>
+
+            {/* 업로드 버튼 또는 미리보기 */}
+            {!previewImage && !formData.posterImage ? (
+              <div className="relative">
+                <input
+                  id="posterImage"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploadingImage}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="posterImage"
+                  className={`flex items-center justify-center space-x-2 w-full px-4 py-3 bg-gray-900 border-2 border-dashed border-gray-700 rounded-lg cursor-pointer hover:border-yellow-500 transition-colors ${
+                    uploadingImage ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <Upload className="w-5 h-5 text-gray-400" />
+                  <span className="text-gray-400">
+                    {uploadingImage ? '업로드 중...' : '이미지 파일 선택 (최대 10MB)'}
+                  </span>
+                </label>
+              </div>
+            ) : (
+              <div className="relative">
                 <img
-                  src={formData.posterImage}
+                  src={previewImage || formData.posterImage}
                   alt="포스터 미리보기"
                   className="max-w-xs rounded-lg border border-gray-700"
-                  onError={(e) => {
-                    e.currentTarget.src = ''
-                    e.currentTarget.alt = '이미지를 불러올 수 없습니다'
-                  }}
                 />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute top-2 right-2 p-2 bg-red-600 hover:bg-red-700 rounded-full transition-colors"
+                  aria-label="이미지 제거"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             )}
+
+            <p className="text-xs text-gray-500 mt-1">
+              포스터 이미지를 업로드하세요. 집회 상세 페이지에 표시됩니다.
+            </p>
           </div>
 
           {/* 아이콘 선택 */}
