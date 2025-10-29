@@ -6,16 +6,20 @@
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Save, ArrowLeft, Calendar, MapPin, Video } from 'lucide-react'
+import { Save, ArrowLeft, Calendar, MapPin, Video, Search } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { createEvent } from '@/services/firebase/firestore'
 import { IconSelector } from '@/components/event/IconSelector'
+import { AddressSearchModal } from '@/components/address/AddressSearchModal'
+import { getCoordinatesFromAddress } from '@/services/juso/api'
 import type { EventInput } from '@/types/event.types'
+import type { JusoAddress } from '@/services/juso/api'
 
 export function AdminEventCreatePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [isAddressSearchOpen, setIsAddressSearchOpen] = useState(false)
   const [formData, setFormData] = useState<EventInput>({
     title: '',
     description: '',
@@ -87,6 +91,20 @@ export function AdminEventCreatePage() {
     setFormData({
       ...formData,
       tags: formData.tags.filter((t) => t !== tag),
+    })
+  }
+
+  const handleSelectAddress = async (address: JusoAddress) => {
+    // 좌표 변환 시도 (실제로는 카카오 맵 API 등을 사용해야 함)
+    const coordinates = await getCoordinatesFromAddress(address.roadAddr)
+
+    setFormData({
+      ...formData,
+      location: {
+        ...formData.location,
+        address: address.roadAddr,
+        coordinates: coordinates || formData.location.coordinates,
+      },
     })
   }
 
@@ -276,20 +294,33 @@ export function AdminEventCreatePage() {
             <label htmlFor="address" className="block text-sm font-medium mb-2">
               주소 <span className="text-red-500">*</span>
             </label>
-            <input
-              id="address"
-              type="text"
-              value={formData.location.address}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  location: { ...formData.location, address: e.target.value },
-                })
-              }
-              placeholder="예: 서울특별시 중구 태평로1가 31"
-              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
-              required
-            />
+            <div className="flex space-x-2">
+              <input
+                id="address"
+                type="text"
+                value={formData.location.address}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    location: { ...formData.location, address: e.target.value },
+                  })
+                }
+                placeholder="예: 서울특별시 중구 태평로1가 31"
+                className="flex-1 px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setIsAddressSearchOpen(true)}
+                className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center space-x-2 whitespace-nowrap"
+              >
+                <Search className="w-5 h-5" />
+                <span>주소 검색</span>
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              주소 검색 버튼을 클릭하여 도로명주소를 검색할 수 있습니다.
+            </p>
           </div>
 
           {/* 상세 위치 */}
@@ -503,6 +534,13 @@ export function AdminEventCreatePage() {
           </button>
         </div>
       </form>
+
+      {/* 주소 검색 모달 */}
+      <AddressSearchModal
+        isOpen={isAddressSearchOpen}
+        onClose={() => setIsAddressSearchOpen(false)}
+        onSelect={handleSelectAddress}
+      />
     </div>
   )
 }
