@@ -480,11 +480,15 @@ export function EventDetailPage() {
         />
       )}
 
+      {/* 제목 배너 */}
+      <div className="bg-white rounded-lg p-8 mb-6 shadow-xl border-4 border-yellow-500">
+        <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-900 leading-tight">
+          {event.title}
+        </h1>
+      </div>
+
       {/* 집회 정보 */}
       <div className="bg-gray-800 rounded-lg p-6 mb-6 border border-gray-700">
-        {/* 제목 */}
-        <h1 className="text-2xl font-bold mb-3">{event.title}</h1>
-
         {/* 상태 정보 바 */}
         <div className="flex items-center flex-wrap gap-3 mb-4">
           {/* 즐겨찾기 버튼 */}
