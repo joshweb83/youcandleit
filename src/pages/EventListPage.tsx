@@ -115,10 +115,19 @@ export function EventListPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-3xl font-bold">{t('event.list')}</h1>
+
+          {/* 필터 버튼 */}
+          <SearchFilter
+            filters={filters}
+            onFilterChange={setFilters}
+            onReset={handleResetFilters}
+            isOpen={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+          />
         </div>
 
         {/* 검색 바 */}
-        <div className="relative mb-4">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
@@ -128,15 +137,6 @@ export function EventListPage() {
             className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white placeholder-gray-400"
           />
         </div>
-
-        {/* 검색 필터 */}
-        <SearchFilter
-          filters={filters}
-          onFilterChange={setFilters}
-          onReset={handleResetFilters}
-          isOpen={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-        />
       </div>
 
       {/* 결과 카운트 */}
