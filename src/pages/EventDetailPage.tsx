@@ -475,58 +475,13 @@ export function EventDetailPage() {
           </div>
         </div>
 
-        {/* 실시간 방송 */}
-        {event.liveStreamUrl && (
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center space-x-2">
-              <Video className="w-4 h-4" />
-              <span>실시간 방송</span>
-            </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* 영상 */}
-              <div className="lg:col-span-2">
-                <div className="aspect-video rounded-lg overflow-hidden border border-gray-700 bg-black">
-                  <iframe
-                    src={getYouTubeEmbedUrl(event.liveStreamUrl)}
-                    title={`${event.title} 실시간 방송`}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              </div>
-
-              {/* 라이브 채팅 */}
-              <div className="lg:col-span-1">
-                <div className="h-[300px] lg:h-full rounded-lg overflow-hidden border border-gray-700 bg-black">
-                  {getYouTubeLiveChatUrl(event.liveStreamUrl) ? (
-                    <iframe
-                      src={getYouTubeLiveChatUrl(event.liveStreamUrl)!}
-                      title={`${event.title} 라이브 채팅`}
-                      className="w-full h-full"
-                      allowFullScreen
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-500">
-                      <div className="text-center">
-                        <p className="text-sm">💬</p>
-                        <p className="text-xs mt-2">라이브 채팅을 불러올 수 없습니다</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* 장소 지도 */}
         <div className="mb-6">
           <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center space-x-2">
             <MapPin className="w-4 h-4" />
             <span>집회 장소</span>
           </h3>
-          <div className="h-64 rounded-lg overflow-hidden border border-gray-700 relative">
+          <div className="h-32 rounded-lg overflow-hidden border border-gray-700 relative">
             <MapContainer
               center={[event.location.coordinates.lat, event.location.coordinates.lng]}
               zoom={15}
@@ -585,6 +540,51 @@ export function EventDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* 실시간 방송 */}
+        {event.liveStreamUrl && (
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-400 mb-3 flex items-center space-x-2">
+              <Video className="w-4 h-4" />
+              <span>실시간 방송</span>
+            </h3>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* 영상 */}
+              <div className="lg:col-span-2">
+                <div className="aspect-video rounded-lg overflow-hidden border border-gray-700 bg-black">
+                  <iframe
+                    src={getYouTubeEmbedUrl(event.liveStreamUrl)}
+                    title={`${event.title} 실시간 방송`}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+
+              {/* 라이브 채팅 */}
+              <div className="lg:col-span-1">
+                <div className="h-[300px] lg:h-full rounded-lg overflow-hidden border border-gray-700 bg-black">
+                  {getYouTubeLiveChatUrl(event.liveStreamUrl) ? (
+                    <iframe
+                      src={getYouTubeLiveChatUrl(event.liveStreamUrl)!}
+                      title={`${event.title} 라이브 채팅`}
+                      className="w-full h-full"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <p className="text-sm">💬</p>
+                        <p className="text-xs mt-2">라이브 채팅을 불러올 수 없습니다</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 현장 참여 인증 버튼 */}
         <button
