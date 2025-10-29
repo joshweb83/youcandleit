@@ -8,6 +8,7 @@
  */
 
 import { ReactNode } from 'react'
+import { Link } from 'react-router'
 import { Navbar } from './Navbar'
 
 interface MainLayoutProps {
@@ -20,7 +21,9 @@ export function MainLayout({ children }: MainLayoutProps) {
       {/* 헤더 */}
       <header className="bg-gray-800 border-b border-gray-700 z-40 flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-center">
-          <h1 className="text-2xl" style={{ fontFamily: 'Pacifico, cursive' }}>youcandleit</h1>
+          <Link to="/" className="cursor-pointer hover:opacity-80 transition-opacity">
+            <h1 className="text-2xl" style={{ fontFamily: 'Pacifico, cursive' }}>youcandleit</h1>
+          </Link>
         </div>
       </header>
 
