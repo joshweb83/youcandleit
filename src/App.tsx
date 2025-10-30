@@ -18,6 +18,7 @@ const AdminEventCreatePage = lazy(() => import('./pages/AdminEventCreatePage').t
 const LivePage = lazy(() => import('./pages/LivePage').then(m => ({ default: m.LivePage })))
 const CommunityPage = lazy(() => import('./pages/CommunityPage').then(m => ({ default: m.CommunityPage })))
 const MyPage = lazy(() => import('./pages/MyPage').then(m => ({ default: m.MyPage })))
+const DevToolsPage = lazy(() => import('./pages/DevToolsPage').then(m => ({ default: m.DevToolsPage })))
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
             <Route path="/live" element={<LivePage />} />
             <Route path="/community" element={<CommunityPage />} />
             <Route path="/my" element={<MyPage />} />
+            <Route path="/dev-tools" element={<DevToolsPage />} />
           </Routes>
         </Suspense>
       </MainLayout>
