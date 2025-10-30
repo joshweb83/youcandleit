@@ -238,22 +238,157 @@ addEvents();
 
 ---
 
-## 샘플 댓글 데이터
+## 샘플 체크인 데이터 (GPS 인증 참여자)
 
-`comments` 컬렉션에 추가:
+`checkIns` 컬렉션에 추가:
 
 ```json
 {
   "eventId": "[집회 ID]",
-  "userId": "[사용자 UID]",
-  "userName": "김시민",
+  "userId": "user_sample001",
+  "userName": "김민준",
+  "location": {
+    "lat": 37.5668,
+    "lng": 126.9782
+  },
+  "checkedInAt": "2025-10-30T18:30:00+09:00",
+  "isAnonymous": false
+}
+```
+
+**GPS 좌표 예시 (서울시청 주변):**
+- 37.5668, 126.9782
+- 37.5663, 126.9778
+- 37.5667, 126.9785
+- 37.5661, 126.9776
+
+---
+
+## 샘플 촛불 데이터 (Realtime Database)
+
+Realtime Database의 `candles/[이벤트ID]` 경로에 추가:
+
+### 현장 참여자 (GPS 위치 포함)
+
+```json
+{
+  "userId": "user_sample001",
+  "eventId": "[집회 ID]",
+  "type": "onsite",
+  "location": {
+    "lat": 37.5668,
+    "lng": 126.9782
+  },
+  "timestamp": 1730290800000
+}
+```
+
+### 원격 참여자 (GPS 위치 없음)
+
+```json
+{
+  "userId": "user_sample002",
+  "eventId": "[집회 ID]",
+  "type": "remote",
+  "timestamp": 1730290800000
+}
+```
+
+**현장 참여자 GPS 좌표 예시:**
+- **서울시청** (37.5665, 126.9780):
+  - 37.5668, 126.9782
+  - 37.5663, 126.9778
+  - 37.5667, 126.9785
+  - 37.5661, 126.9776
+  - 37.5669, 126.9783
+
+- **광화문광장** (37.5720, 126.9769):
+  - 37.5722, 126.9771
+  - 37.5718, 126.9767
+  - 37.5721, 126.9772
+  - 37.5719, 126.9768
+
+- **국회의사당** (37.5323, 126.9146):
+  - 37.5325, 126.9148
+  - 37.5321, 126.9144
+  - 37.5324, 126.9147
+  - 37.5322, 126.9145
+
+---
+
+## 샘플 댓글 데이터 (위치 정보 포함)
+
+`comments` 컬렉션에 추가:
+
+### 위치 정보가 있는 댓글 (온라인 참여자 위치)
+
+```json
+{
+  "eventId": "[집회 ID]",
+  "userId": "user_sample003",
+  "userName": "이서연",
   "content": "함께합니다! 우리의 목소리가 변화를 만들 거예요 💪",
   "isRemote": true,
   "isAIGenerated": false,
-  "likes": 0,
-  "createdAt": 1730000000000
+  "likes": 5,
+  "location": {
+    "lat": 37.5234,
+    "lng": 127.0421
+  },
+  "createdAt": 1730290800000
 }
 ```
+
+### 위치 정보가 없는 댓글
+
+```json
+{
+  "eventId": "[집회 ID]",
+  "userId": "user_sample004",
+  "userName": "박예준",
+  "content": "응원합니다! 변화는 우리 손으로!",
+  "isRemote": true,
+  "isAIGenerated": false,
+  "likes": 3,
+  "createdAt": 1730290800000
+}
+```
+
+---
+
+## 🛠️ 샘플 참여자 데이터 자동 생성
+
+프로젝트에 포함된 스크립트를 사용하여 샘플 참여자 데이터를 자동으로 생성할 수 있습니다:
+
+### 1. 스크립트 위치
+- `src/scripts/generateSampleParticipants.ts` - 샘플 데이터 생성
+- `src/scripts/addSampleDataToFirebase.ts` - Firebase에 추가
+
+### 2. 사용 방법
+
+#### 방법 A: 브라우저 콘솔에서 실행
+1. 앱 실행: `npm run dev`
+2. 브라우저 개발자 도구 열기 (F12)
+3. 콘솔에서 실행:
+```javascript
+// 스크립트를 import하여 실행
+import('./src/scripts/addSampleDataToFirebase').then(module => {
+  module.addAllSampleDataToFirebase()
+})
+```
+
+#### 방법 B: 개발자 도구 페이지 사용
+1. `/dev-tools` 페이지로 이동
+2. "샘플 참여자 추가" 버튼 클릭
+3. 자동으로 GPS 좌표가 있는 참여자 데이터 생성 및 추가
+
+### 3. 생성되는 데이터
+- ✅ 체크인: 이벤트 주변 GPS 좌표를 가진 현장 인증 참여자
+- ✅ 촛불: 현장/원격 참여자 (현장 참여자는 GPS 좌표 포함)
+- ✅ 댓글: 50% 확률로 GPS 좌표를 가진 온라인 참여자
+
+### 4. 주의사항
+⚠️ Firebase에서 실제 이벤트 ID를 확인하고 `generateSampleParticipants.ts`의 `SAMPLE_EVENTS` 배열을 수정해야 합니다!
 
 ---
 
