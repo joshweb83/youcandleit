@@ -2,16 +2,24 @@
  * 지도 페이지
  *
  * Leaflet 지도를 사용하여 집회 위치를 표시합니다.
+ * 하단 슬라이드 패널로 집회 목록을 표시합니다.
  */
 
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useEvents } from '@/hooks/useEvents'
 import { MapView } from '@/components/map/MapView'
+import { BottomSheet } from '@/components/map/BottomSheet'
+import { EventCardCompact } from '@/components/map/EventCardCompact'
 import { AlertCircle } from 'lucide-react'
+import type { Event } from '@/types/event.types'
+import type { LatLngExpression } from 'leaflet'
 
 export function MapPage() {
   const { t } = useTranslation()
   const { events, loading, error } = useEvents()
+  const [mapCenter, setMapCenter] = useState<LatLngExpression>([37.5665, 126.978])
+  const [mapZoom, setMapZoom] = useState(13)
 
   if (loading) {
     return (
@@ -80,10 +88,47 @@ export function MapPage() {
     )
   }
 
+  // 카드 클릭 시 지도 중심 이동
+  const handleCardClick = (event: Event) => {
+    setMapCenter([event.location.coordinates.lat, event.location.coordinates.lng])
+    setMapZoom(15)
+  }
+
+  // 진행 중인 집회를 먼저 표시
+  const sortedEvents = [...events].sort((a, b) => {
+    if (a.status === 'ongoing' && b.status !== 'ongoing') return -1
+    if (a.status !== 'ongoing' && b.status === 'ongoing') return 1
+    return new Date(a.datetime.start).getTime() - new Date(b.datetime.start).getTime()
+  })
+
   return (
-    <div className="h-full">
+    <div className="h-full relative">
       {events.length > 0 ? (
-        <MapView events={events} />
+        <>
+          {/* 지도 */}
+          <MapView events={events} center={mapCenter} zoom={mapZoom} />
+
+          {/* 하단 슬라이드 패널 */}
+          <BottomSheet>
+            <div className="px-4 pt-2">
+              {/* 집회 카드 리스트 */}
+              {sortedEvents.length > 0 ? (
+                sortedEvents.map((event) => (
+                  <EventCardCompact
+                    key={event.id}
+                    event={event}
+                    onCardClick={handleCardClick}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-2">🕯️</div>
+                  <p className="text-gray-400">등록된 집회가 없습니다</p>
+                </div>
+              )}
+            </div>
+          </BottomSheet>
+        </>
       ) : (
         <div className="w-full h-full bg-gray-800 flex items-center justify-center">
           <div className="text-center px-6">
