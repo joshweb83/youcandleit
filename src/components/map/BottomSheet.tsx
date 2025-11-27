@@ -106,7 +106,8 @@ export function BottomSheet({ children, onStateChange }: BottomSheetProps) {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [isDragging, startY, currentY])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDragging])
 
   // 핸들 클릭으로 상태 토글
   const handleToggle = () => {
